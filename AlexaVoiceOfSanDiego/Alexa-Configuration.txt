@@ -1,0 +1,18 @@
+﻿{
+  "intents": [
+    {
+      "intent": "MorningReport"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.CancelIntent"
+    }
+  ]
+}
+
+MorningReport to read me the morning report
+MorningReport give me the morning report
+MorningReport morning report
+MorningReport daily report
