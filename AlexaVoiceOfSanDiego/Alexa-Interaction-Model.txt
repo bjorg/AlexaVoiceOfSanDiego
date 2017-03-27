@@ -1,7 +1,16 @@
 ﻿{
   "intents": [
     {
-      "intent": "MorningReport"
+      "intent": "ReadMorningReport"
+    },
+    {
+      "intent": "PlayPodcast"
+    },
+    {
+      "intent": "AMAZON.ResumeIntent"
+    },
+    {
+      "intent": "AMAZON.PauseIntent"
     },
     {
       "intent": "AMAZON.StopIntent"
@@ -12,7 +21,11 @@
   ]
 }
 
-MorningReport to read me the morning report
-MorningReport give me the morning report
-MorningReport morning report
-MorningReport daily report
+
+ReadMorningReport to read me the morning report
+ReadMorningReport to give me the morning report
+ReadMorningReport about the morning report
+ReadMorningReport morning report
+
+PlayPodcast to play the most recent podcast
+PlayPodcast podcast
