@@ -1,38 +1,19 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-
-using Xunit;
-using Amazon.Lambda.Core;
-using Amazon.Lambda.TestUtilities;
-
-using FetchPodcasts;
 using System.Xml.Linq;
+using Xunit;
 
 namespace FetchPodcasts.Tests {
 
     public class FunctionTest {
-        // [Fact]
-        // public void TestToUpperFunction() {
-
-        //     // Invoke the lambda function and confirm the string was upper cased.
-        //     var function = new Function();
-        //     var context = new TestLambdaContext();
-        //     var upperCase = function.FunctionHandler("hello world", context);
-
-        //     Assert.Equal("HELLO WORLD", upperCase);
-        // }
 
         [Fact]
-        public void ReadRSSFeed() {
+        public void FindFirst5PodcastsInRssFeed() {
 
             // arrange
             var rss = XDocument.Load("../../../rss.xml");
 
             // act
-            var function = new Function();
-            var podcasts = function.FindPodcasts(rss, 5).ToArray();
+            var podcasts = Function.FindPodcasts(rss, 5);
 
             // assert
             Assert.Equal(5, podcasts.Length);
@@ -46,6 +27,18 @@ namespace FetchPodcasts.Tests {
             Assert.Equal("http://traffic.libsyn.com/clean/vosd/VOSD_Podcast_20170303_FULL_mixdown.mp3?dest-id=19280", podcasts[3].Url);
             Assert.Equal("The Three Challenges to SoccerCity and the District's Budget Mess", podcasts[4].Title);
             Assert.Equal("http://traffic.libsyn.com/clean/vosd/VOSD_Podcast_20170224_FULL_mixdown.mp3?dest-id=19280", podcasts[4].Url);
+        }
+
+        [Fact]
+        public void FetchLivePodcastFeed() {
+
+            // arrange
+
+            // act
+            var rss = Function.FetchPodcastFeed("http://podcast.voiceofsandiego.org/rss").Result;
+
+            // assert
+            Assert.Equal("rss", rss.Elements().First().Name);
         }
     }
 }
