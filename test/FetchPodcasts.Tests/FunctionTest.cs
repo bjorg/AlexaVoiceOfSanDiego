@@ -10,10 +10,11 @@ namespace FetchPodcasts.Tests {
         public void FindFirst5PodcastsInRssFeed() {
 
             // arrange
+            var function = new Function(null, null, 5);
             var rss = XDocument.Load("../../../rss.xml");
 
             // act
-            var podcasts = Function.FindPodcasts(rss, 5);
+            var podcasts = function.FindPodcasts(rss);
 
             // assert
             Assert.Equal(5, podcasts.Length);
@@ -33,12 +34,33 @@ namespace FetchPodcasts.Tests {
         public void FetchLivePodcastFeed() {
 
             // arrange
+            var function = new Function("http://podcast.voiceofsandiego.org/rss", null, 5);
 
             // act
-            var rss = Function.FetchPodcastFeed("http://podcast.voiceofsandiego.org/rss").Result;
+            var rss = function.FetchPodcastFeed().Result;
 
             // assert
             Assert.Equal("rss", rss.Elements().First().Name);
+        }
+
+        [Fact]
+        public void WritePodcastsToTable() {
+
+            // arrange
+            // var function = new Function(null, "VOSD-AlexaContents", 5);
+            // var podcasts = new[] {
+            //     new Function.PodcastInfo { Title = "Podcast #1", Url = "https://example.org/some/podcast1" },
+            //     new Function.PodcastInfo { Title = "Podcast #2", Url = "https://example.org/some/podcast2" },
+            //     new Function.PodcastInfo { Title = "Podcast #3", Url = "https://example.org/some/podcast3" },
+            //     new Function.PodcastInfo { Title = "Podcast #4", Url = "https://example.org/some/podcast4" },
+            //     new Function.PodcastInfo { Title = "Podcast #5", Url = "https://example.org/some/podcast5" }
+            // };
+
+            // act
+            // var results = function.SavePodcasts(podcasts).Result;
+
+            // assert
+            // Assert.Equal("rss", rss.Elements().First().Name);
         }
     }
 }
