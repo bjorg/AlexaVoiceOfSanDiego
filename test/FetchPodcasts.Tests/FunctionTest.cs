@@ -6,8 +6,9 @@ namespace FetchPodcasts.Tests {
 
     public class FunctionTest {
 
+        //--- Methods ---
         [Fact]
-        public void FindFirst5PodcastsInRssFeed() {
+        public void FindPodcastsInRssFeed() {
 
             // arrange
             var function = new Function(null, null, 5);
@@ -37,7 +38,7 @@ namespace FetchPodcasts.Tests {
             var function = new Function("http://podcast.voiceofsandiego.org/rss", null, 5);
 
             // act
-            var rss = function.FetchPodcastFeed().Result;
+            var rss = function.FetchPodcastFeedAsync().Result;
 
             // assert
             Assert.Equal("rss", rss.Elements().First().Name);

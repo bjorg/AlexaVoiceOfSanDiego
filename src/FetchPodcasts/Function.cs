@@ -25,11 +25,10 @@ namespace FetchPodcasts {
             public string Url { get; set; }
         }
 
-        public class UnableToLoadRssFeed : Exception { }
+        private class UnableToLoadRssFeed : Exception { }
 
         //--- Class Fields ---
         private static HttpClient _httpClient = new HttpClient();
-        private static readonly DateTime Epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         //--- Fields ---
         private readonly string _podcastFeedUrl;
@@ -67,7 +66,7 @@ namespace FetchPodcasts {
 
             // retrieve RSS feed and parse it
             LambdaLogger.Log($"fetching podcast feed from '{_podcastFeedUrl}'");
-            var rss = await FetchPodcastFeed();
+            var rss = await FetchPodcastFeedAsync();
 
             // find up to the desired number of podcast entries
             LambdaLogger.Log($"extracting up to {_podcastsLimit} podcast entries");
@@ -76,12 +75,12 @@ namespace FetchPodcasts {
 
             // store podcast playlist
             if(podcasts.Any()) {
-                await SavePodcasts(podcasts);
+                await SavePodcastsAsync(podcasts);
                 LambdaLogger.Log($"updated podcasts playlist");
             }
         }
 
-        public async Task<XDocument> FetchPodcastFeed() {
+        public async Task<XDocument> FetchPodcastFeedAsync() {
             var response = await _httpClient.GetAsync(_podcastFeedUrl);
             if(!response.IsSuccessStatusCode) {
                 throw new UnableToLoadRssFeed();
@@ -90,17 +89,18 @@ namespace FetchPodcasts {
         }
 
         public PodcastInfo[] FindPodcasts(XDocument rss) {
-            return rss.Element("rss")
-                .Element("channel")
-                .Elements("item")
-                .Take(_podcastsLimit)
-                .Select(item => new PodcastInfo {
+            return rss?.Element("rss")
+                ?.Element("channel")
+                ?.Elements("item")
+                ?.Take(_podcastsLimit)
+                ?.Select(item => new PodcastInfo {
                     Title = item.Element("title").Value,
                     Url = item.Element("enclosure").Attribute("url").Value
-                }).ToArray();
+                })
+                ?.ToArray() ?? new PodcastInfo[0];
         }
 
-        public async Task<bool> SavePodcasts(PodcastInfo[] podcasts) {
+        public async Task<bool> SavePodcastsAsync(PodcastInfo[] podcasts) {
             var response = await _dynamoClient.PutItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
                 ["Key"] = new AttributeValue { S = "podcasts" },
                 ["Value"] = new AttributeValue { S = JsonConvert.SerializeObject(podcasts) }
