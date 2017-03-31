@@ -89,12 +89,6 @@ namespace HandleAlexaPrompts {
                     OutputSpeech = new SsmlOutputSpeech {
                         Ssml = value.S
                     },
-                    Card = new SimpleCard {
-                        Title = "Voice of San Diego",
-
-                        // TODO (2017-03-31, steveb): convert to plain text
-                        Content = value.S
-                    },
                     ShouldEndSession = true
                 }
             };
