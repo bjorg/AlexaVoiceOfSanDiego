@@ -2,18 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Linq;
 using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Core;
-using Amazon.Lambda.Serialization;
 using HtmlAgilityPack;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
@@ -32,6 +29,9 @@ namespace FetchMorningReport {
         //--- Fields ---
         private readonly string _morningReportFeedUrl;
         private readonly string _dynamoTable;
+        private readonly string _preHeadingBreak = "1500ms";
+        private readonly string _postHeadingBreak = "1s";
+        private readonly string _bulletBreak = "500ms";
         private readonly AmazonDynamoDBClient _dynamoClient = new AmazonDynamoDBClient(RegionEndpoint.USEast1);
 
         //--- Class Methods ---
@@ -68,8 +68,13 @@ namespace FetchMorningReport {
         public Function() {
 
             // read mandatory lambda function settings; without these, nothing works!
-            _morningReportFeedUrl = System.Environment.GetEnvironmentVariable("morning_report_feed_url");
-            _dynamoTable = System.Environment.GetEnvironmentVariable("dynamo_table");
+            _morningReportFeedUrl = Environment.GetEnvironmentVariable("morning_report_feed_url");
+            _dynamoTable = Environment.GetEnvironmentVariable("dynamo_table");
+
+            // read optional lambda function settings
+            _preHeadingBreak = Environment.GetEnvironmentVariable("pre_heading_break") ?? _preHeadingBreak;
+            _postHeadingBreak = Environment.GetEnvironmentVariable("post_heading_break") ?? _postHeadingBreak;
+            _bulletBreak = Environment.GetEnvironmentVariable("bullet_break") ?? _bulletBreak;
         }
 
         public Function(string podcastFeedUrl, string dynamoTable) {
@@ -214,18 +219,19 @@ namespace FetchMorningReport {
             Visit(ssml.Root, doc.Root);
             return ssml.ToString();
 
-            void VisitNodes(XElement parent, IEnumerable<XNode> nodes) {
-                foreach(var node in nodes) {
+            void VisitNodes(XElement parent, XElement element) {
+                foreach(var node in element.Nodes()) {
                     Visit(parent, node);
                 }
             }
+
             void Visit(XElement parent, XNode node) {
                 switch(node) {
                 case XElement xelement:
                     var name = xelement.Name.ToString();
                     switch(name) {
                     case "p":
-                        VisitNodes(parent, xelement.Nodes());
+                        VisitNodes(parent, xelement);
                         parent.Add(new XText(" "));
                         break;
                     case "h1":
@@ -234,17 +240,26 @@ namespace FetchMorningReport {
                     case "h4":
                     case "h5":
                     case "h6":
-                        var p = new XElement("p");
-                        parent.Add(p);
-                        VisitNodes(p, xelement.Nodes());
+                        parent.Add(new XElement("break", new XAttribute("time", _preHeadingBreak)));
+                        VisitNodes(parent, xelement);
+                        parent.Add(new XElement("break", new XAttribute("time", _postHeadingBreak)));
                         break;
                     default:
-                        VisitNodes(parent, xelement.Nodes());
+                        VisitNodes(parent, xelement);
                         break;
                     }
                     break;
                 case XText xtext:
-                    parent.Add(new XText(DecodeHtmlEntities(xtext.Value)));
+                    var decodedText = DecodeHtmlEntities(xtext.Value);
+                    var trimmedValue = decodedText.TrimStart();
+
+                    // replace leading bullet points with pauses
+                    if(trimmedValue.StartsWith("\u2022")) {
+                        parent.Add(new XElement("break", new XAttribute("time", _bulletBreak)));
+                        parent.Add(new XText(" " + trimmedValue.Substring(1).TrimStart()));
+                    } else {
+                        parent.Add(new XText(decodedText));
+                    }
                     break;
                 }
             }

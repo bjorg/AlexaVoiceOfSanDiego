@@ -48,7 +48,8 @@ Setup
     1. Add cron trigger
         1. Select `CloudWatch Event - Schedule`
         1. Create rule name: `VOSD-UpdateAlexaContents`
-        1. Schedule expression: `rate(15 minutes)`
+        1. Rule description: `Update VOSD-AlexaContents table`
+        1. Schedule expression: `cron(0/15 11-17 ? * * *)`
 
 1. Deploy `VOSD-FetchMorningReport`
     1. Create IAM role for `FetchMorningReport`

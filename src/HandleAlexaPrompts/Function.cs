@@ -5,6 +5,12 @@ using Alexa.NET.Request.Type;
 using Newtonsoft.Json;
 using Alexa.NET.Response.Directive;
 using System;
+using Amazon;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.Model;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Net;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -12,15 +18,24 @@ using System;
 namespace HandleAlexaPrompts {
     public class Function {
 
-        /// <summary>
-        /// A simple function that takes a string and does a ToUpper
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        public SkillResponse FunctionHandler(SkillRequest skill, ILambdaContext context) {
-            LambdaLogger.Log($"received skill request ({skill.Request.GetType().Name}): request-id={skill.Request.RequestId}; session-id={skill.Session.SessionId}");
+        //--- Fields ---
+        private readonly string _dynamoTable;
+        private readonly AmazonDynamoDBClient _dynamoClient = new AmazonDynamoDBClient(RegionEndpoint.USEast1);
 
+        //--- Constructors ---
+        public Function() {
+
+            // read mandatory lambda function settings; without these, nothing works!
+            _dynamoTable = System.Environment.GetEnvironmentVariable("dynamo_table");
+        }
+
+        public async Task<SkillResponse> FunctionHandler(SkillRequest skill, ILambdaContext context) {
+            LambdaLogger.Log($"received skill request ({skill.Request.GetType().Name}): request-id={skill.Request.RequestId}; session-id={skill.Session.SessionId}");
+            if(_dynamoTable == null) {
+                throw new Exception("missing configuration value 'dynamo_table'");
+            }
+
+            // decode skill request
             try {
                 switch(skill.Request) {
                 case LaunchRequest launch:
@@ -33,10 +48,9 @@ namespace HandleAlexaPrompts {
                     LambdaLogger.Log($"intent: {intent.Intent.Name}");
                     switch(intent.Intent.Name) {
                     case "ReadMorningReport":
-
-                        // from: http://www.voiceofsandiego.org/category/newsletters/morning-report/
-                        return BuildSpeechResponse("I don't know yet how to read the morning report.", reprompt: null, shouldEndSession: true);
+                        return await BuildMorningReportResponse();
                     case "PlayPodcast":
+
                         // from: http://podcast.voiceofsandiego.org/rss
                         return BuildAudioResponse("https://traffic.libsyn.com/clean/vosd/VOSD_Podcast_20170324_FULL_mixdown.mp3", shouldEndSession: true);
                     case BuiltInIntent.Resume:
@@ -59,6 +73,31 @@ namespace HandleAlexaPrompts {
             } finally {
                 LambdaLogger.Log($"finished skill request: request-id={skill.Request.RequestId}; session-id={skill.Session.SessionId}");
             }
+        }
+
+        private async Task<SkillResponse> BuildMorningReportResponse() {
+            var response = await _dynamoClient.GetItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
+                ["Key"] = new AttributeValue { S = "morningreport" }
+            });
+            AttributeValue value = null;
+            if((response.HttpStatusCode != HttpStatusCode.OK) || !response.Item.TryGetValue("Value", out value)) {
+                return BuildSpeechResponse("Sorry, there was an error reading the morning report. Please try again later.", reprompt: null, shouldEndSession: true);
+            }
+            return new SkillResponse {
+                Version = "1.0",
+                Response = new ResponseBody {
+                    OutputSpeech = new SsmlOutputSpeech {
+                        Ssml = value.S
+                    },
+                    Card = new SimpleCard {
+                        Title = "Voice of San Diego",
+
+                        // TODO (2017-03-31, steveb): convert to plain text
+                        Content = value.S
+                    },
+                    ShouldEndSession = true
+                }
+            };
         }
 
         private SkillResponse BuildSpeechResponse(string prompt, string reprompt, bool shouldEndSession) {

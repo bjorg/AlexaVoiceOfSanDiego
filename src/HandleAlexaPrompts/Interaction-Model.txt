@@ -24,7 +24,15 @@
 
 ReadMorningReport to read me the morning report
 ReadMorningReport to give me the morning report
+ReadMorningReport to tell me the morning report
+ReadMorningReport read me the morning report
+ReadMorningReport give me the morning report
+ReadMorningReport tell me the morning report
+ReadMorningReport read the morning report
+ReadMorningReport give the morning report
+ReadMorningReport tell the morning report
 ReadMorningReport about the morning report
+ReadMorningReport about morning report
 ReadMorningReport morning report
 
 PlayPodcast to play the most recent podcast
