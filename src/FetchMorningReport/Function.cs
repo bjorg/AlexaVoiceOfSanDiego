@@ -101,7 +101,7 @@ namespace FetchMorningReport {
             LambdaLogger.Log("found morning report entries");
 
             // store morning report
-            await SaveMorningReportAsync(ConvertContentsToSsml(morningReport));
+            await SaveMorningReportAsync(ConvertContentsToSsml(morningReport.Title, morningReport.Contents));
             LambdaLogger.Log("updated morning report");
         }
 
@@ -113,98 +113,22 @@ namespace FetchMorningReport {
             return XDocument.Parse(await response.Content.ReadAsStringAsync());
         }
 
-        public string FindMorningReport(XDocument rss) {
-            return rss?.Element("rss")
+        public (string Title, string Contents) FindMorningReport(XDocument rss) {
+            var item = rss?.Element("rss")
                 ?.Element("channel")
-                ?.Element("item")
-                ?.Element("{http://purl.org/rss/1.0/modules/content/}encoded")
-                ?.Value;
+                ?.Element("item");
+            if(item == null) {
+                return (null, null);
+            }
+            var title = item.Element("title")?.Value;
+            var contents = item.Element("{http://purl.org/rss/1.0/modules/content/}encoded")?.Value;
+            return (title, contents);
         }
 
-        public string ConvertContentsToText(string contents) {
-
-            // convert HTML encoded contents to plain text
-            HtmlDocument html = new HtmlDocument();
-            html.LoadHtml($"<html><body>{contents}</body></html>");
-            html.OptionOutputAsXml = true;
-            var xml = new StringWriter();
-            html.Save(xml);
-            var doc = XDocument.Parse(xml.ToString());
-
-            // extract all inner text nodes
-            var text = new StringBuilder();
-            Visit(doc.Root);
-            return text.ToString();
-
-            void VisitNodes(IEnumerable<XNode> nodes) {
-                foreach(var node in nodes) {
-                    Visit(node);
-                }
+        public string ConvertContentsToSsml(string title, string contents) {
+            if(contents == null) {
+                return null;
             }
-            void Visit(XNode node) {
-                switch(node) {
-                case XElement xelement:
-                    var name = xelement.Name.ToString();
-                    switch(name) {
-                    case "p":
-                        VisitNodes(xelement.Nodes());
-                        text.AppendLine();
-                        break;
-                    case "h1":
-                        text.AppendLine();
-                        text.Append("= ");
-                        VisitNodes(xelement.Nodes());
-                        text.Append(" =");
-                        text.AppendLine();
-                        break;
-                    case "h2":
-                        text.AppendLine();
-                        text.Append("== ");
-                        VisitNodes(xelement.Nodes());
-                        text.Append(" ==");
-                        text.AppendLine();
-                        break;
-                    case "h3":
-                        text.AppendLine();
-                        text.Append("=== ");
-                        VisitNodes(xelement.Nodes());
-                        text.Append(" ===");
-                        text.AppendLine();
-                        break;
-                    case "h4":
-                        text.AppendLine();
-                        text.Append("==== ");
-                        VisitNodes(xelement.Nodes());
-                        text.Append(" ====");
-                        text.AppendLine();
-                        break;
-                    case "h5":
-                        text.AppendLine();
-                        text.Append("===== ");
-                        VisitNodes(xelement.Nodes());
-                        text.Append(" =====");
-                        text.AppendLine();
-                        break;
-                    case "h6":
-                        text.AppendLine();
-                        text.Append("====== ");
-                        VisitNodes(xelement.Nodes());
-                        text.Append(" ======");
-                        text.AppendLine();
-                        break;
-                    default:
-                        VisitNodes(xelement.Nodes());
-                        break;
-                    }
-                    break;
-                case XText xtext:
-                    text.Append(DecodeHtmlEntities(xtext.Value));
-                    break;
-                }
-            }
-        }
-
-        public string ConvertContentsToSsml(string contents) {
 
             // convert HTML encoded contents to plain text
             HtmlDocument html = new HtmlDocument();
@@ -216,7 +140,12 @@ namespace FetchMorningReport {
 
             // extract all inner text nodes
             var ssml = new XDocument(new XElement("speak"));
-            Visit(ssml.Root, doc.Root);
+            var root = ssml.Root;
+            if(title != null) {
+                root.Add(new XText(title + " "));
+                root.Add(new XElement("break", new XAttribute("time", _postHeadingBreak)));
+            }
+            Visit(root, doc.Root);
             return ssml.ToString();
 
             void VisitNodes(XElement parent, XElement element) {
@@ -266,6 +195,9 @@ namespace FetchMorningReport {
         }
 
         public async Task<bool> SaveMorningReportAsync(string morningReport) {
+            if(morningReport == null) {
+                return false;
+            }
             var response = await _dynamoClient.PutItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
                 ["Key"] = new AttributeValue { S = "morningreport" },
                 ["Value"] = new AttributeValue { S = morningReport },
