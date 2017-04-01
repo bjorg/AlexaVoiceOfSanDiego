@@ -27,7 +27,8 @@ namespace FetchMorningReport.Tests {
             var morningReport = function.FindMorningReport(rss);
 
             // assert
-            Assert.NotNull(morningReport);
+            Assert.NotNull(morningReport.Title);
+            Assert.NotNull(morningReport.Contents);
         }
 
         [Fact]
@@ -44,31 +45,18 @@ namespace FetchMorningReport.Tests {
         }
 
         [Fact]
-        public void ConvertEncodedContentsToText() {
-
-            // arrange
-            var function = new Function(null, null);
-            var contents = File.ReadAllText("../../../morning-report.txt");
-
-            // act
-            var text = function.ConvertContentsToText(contents);
-
-            // assert
-            // Console.WriteLine(text);
-        }
-
-        [Fact]
         public void ConvertEncodedContentsToSsml() {
 
             // arrange
             var function = new Function(null, null);
+            var title = "Morning Report Title";
             var contents = File.ReadAllText("../../../morning-report.txt");
 
             // act
-            var text = function.ConvertContentsToSsml(contents);
+            var text = function.ConvertContentsToSsml(title, contents);
 
             // assert
-            Console.WriteLine(text);
+            // Console.WriteLine(text);
         }
     }
 }
