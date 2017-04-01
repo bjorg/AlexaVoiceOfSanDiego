@@ -126,7 +126,7 @@ namespace HandleAlexaPrompts {
                 var title = (string)json[podcastIndex]["Title"];
                 var url = (string)json[podcastIndex]["Url"];
                 var token = (string)json[podcastIndex]["Token"];
-                var prompt = $"Playing podcast: \"{title}\"";
+                var prompt = $"Playing podcast entitled: \"{title}\"";
                 var result = new SkillResponse {
                     Version = "1.0",
                     Response = new ResponseBody {
