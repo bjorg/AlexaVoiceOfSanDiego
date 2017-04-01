@@ -7,6 +7,12 @@
       "intent": "PlayPodcast"
     },
     {
+      "intent": "HelpMe"
+    },
+    {
+      "intent": "WhatIsNew"
+    },
+    {
       "intent": "AMAZON.ResumeIntent"
     },
     {
@@ -36,4 +42,14 @@ ReadMorningReport about morning report
 ReadMorningReport morning report
 
 PlayPodcast to play the most recent podcast
+PlayPodcast play podcast
 PlayPodcast podcast
+
+HelpMe what to do
+HelpMe what can I do
+HelpMe for help
+HelpMe to help me
+HelpMe help
+
+WhatIsNew what is new
+WhatIsNew what's new

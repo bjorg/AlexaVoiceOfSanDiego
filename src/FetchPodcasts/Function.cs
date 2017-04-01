@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Amazon;
@@ -23,6 +25,7 @@ namespace FetchPodcasts {
             //--- Properties ---
             public string Title { get; set; }
             public string Url { get; set; }
+            public string Token { get; set; }
         }
 
         private class UnableToLoadRssFeed : Exception { }
@@ -93,9 +96,13 @@ namespace FetchPodcasts {
                 ?.Element("channel")
                 ?.Elements("item")
                 ?.Take(_podcastsLimit)
-                ?.Select(item => new PodcastInfo {
-                    Title = item.Element("title").Value,
-                    Url = item.Element("enclosure").Attribute("url").Value
+                ?.Select(item => {
+                    var url = item.Element("enclosure").Attribute("url").Value.Replace("http://", "https://");
+                    return new PodcastInfo {
+                        Title = item.Element("title").Value,
+                        Url = url,
+                        Token = new Guid(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(url))).ToString()
+                    };
                 })
                 ?.ToArray() ?? new PodcastInfo[0];
         }
