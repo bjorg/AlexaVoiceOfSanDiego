@@ -1,16 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-
-using Xunit;
-using Amazon.Lambda.Core;
-using Amazon.Lambda.TestUtilities;
-
-using FetchMorningReport;
-using HtmlAgilityPack;
 using System.IO;
+using System.Xml.Linq;
+using Xunit;
 
 namespace FetchMorningReport.Tests {
     public class FunctionTest {
