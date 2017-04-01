@@ -172,13 +172,9 @@ namespace HandleAlexaPrompts {
         }
 
         private ICard BuildCard(string prompt) {
-            return new StandardCard {
+            return new SimpleCard {
                 Title = "Voice of San Diego",
-                Content = prompt,
-                Image = new CardImage {
-                    SmallImageUrl = _smallLogoUrl,
-                    LargeImageUrl = _largeLogoUrl
-                }
+                Content = prompt
             };
         }
     }
