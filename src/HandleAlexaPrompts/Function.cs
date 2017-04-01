@@ -12,8 +12,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net;
 using Newtonsoft.Json.Linq;
-using System.Security.Cryptography;
-using System.Text;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -35,8 +33,6 @@ namespace HandleAlexaPrompts {
 
         //--- Fields ---
         private readonly string _dynamoTable;
-        private readonly string _smallLogoUrl;
-        private readonly string _largeLogoUrl;
         private readonly AmazonDynamoDBClient _dynamoClient = new AmazonDynamoDBClient(RegionEndpoint.USEast1);
 
         //--- Constructors ---
@@ -44,8 +40,6 @@ namespace HandleAlexaPrompts {
 
             // read mandatory lambda function settings; without these, nothing works!
             _dynamoTable = Environment.GetEnvironmentVariable("dynamo_table");
-            _smallLogoUrl = Environment.GetEnvironmentVariable("small_logo_url");
-            _largeLogoUrl = Environment.GetEnvironmentVariable("large_logo_url");
         }
 
         public async Task<SkillResponse> FunctionHandler(SkillRequest skill, ILambdaContext context) {
