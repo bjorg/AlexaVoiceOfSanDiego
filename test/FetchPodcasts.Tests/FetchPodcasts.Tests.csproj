@@ -14,5 +14,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FetchPodcasts\FetchPodcasts.csproj" />
+    <ProjectReference Include="..\..\src\Common\Common.csproj" />
   </ItemGroup>
 </Project>

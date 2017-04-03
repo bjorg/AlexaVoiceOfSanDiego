@@ -16,6 +16,6 @@
   "function-memory-size": 256,
   "function-timeout": 30,
   "function-name": "VOSD-HandleAlexaPrompts",
-  "function-handler": "HandleAlexaPrompts::HandleAlexaPrompts.Function::FunctionHandler",
+  "function-handler": "HandleAlexaPrompts::VoiceOfSanDiego.Alexa.HandleAlexaPrompts.Function::FunctionHandler",
   "function-role": "VOSD-HandleAlexaPrompts"
 }

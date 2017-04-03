@@ -16,7 +16,7 @@ using Newtonsoft.Json.Linq;
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 
-namespace HandleAlexaPrompts {
+namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
     public class Function {
 
         //--- Constants ---
@@ -96,11 +96,17 @@ namespace HandleAlexaPrompts {
             if((response.HttpStatusCode != HttpStatusCode.OK) || !response.Item.TryGetValue("Value", out value)) {
                 return BuildSpeechResponse(PROMPT_ERROR_MORNING_REPORT);
             }
+            var json = JObject.Parse(value.S);
+            var title = (string)json["Title"];
+            var date = json["Date"];
+            var author = (string)json["Author"];
+            var ssml = (string)json["Ssml"];
+            var text = (string)json["Text"];
             return new SkillResponse {
                 Version = "1.0",
                 Response = new ResponseBody {
                     OutputSpeech = new SsmlOutputSpeech {
-                        Ssml = value.S
+                        Ssml = ssml
                     },
                     ShouldEndSession = true
                 }

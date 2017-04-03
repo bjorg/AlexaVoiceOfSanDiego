@@ -14,6 +14,7 @@
     <PackageReference Include="System.ValueTuple" Version="4.3.0"/>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Common\Common.csproj" />
     <ProjectReference Include="..\..\src\FetchMorningReport\FetchMorningReport.csproj" />
   </ItemGroup>
 </Project>

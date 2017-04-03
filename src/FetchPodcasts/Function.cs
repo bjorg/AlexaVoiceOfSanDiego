@@ -11,23 +11,16 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Core;
 using Newtonsoft.Json;
+using VoiceOfSanDiego.Alexa.Common;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 
-namespace FetchPodcasts {
+namespace VoiceOfSanDiego.Alexa.FetchPodcasts {
 
     public class Function {
 
         //--- Types ---
-        public class PodcastInfo {
-
-            //--- Properties ---
-            public string Title { get; set; }
-            public string Url { get; set; }
-            public string Token { get; set; }
-        }
-
         private class UnableToLoadRssFeed : Exception { }
 
         //--- Class Fields ---

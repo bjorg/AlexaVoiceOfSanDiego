@@ -1,8 +1,9 @@
 using System.Linq;
 using System.Xml.Linq;
 using Xunit;
+using VoiceOfSanDiego.Alexa.Common;
 
-namespace FetchPodcasts.Tests {
+namespace VoiceOfSanDiego.Alexa.FetchPodcasts.Tests {
 
     public class FunctionTest {
 

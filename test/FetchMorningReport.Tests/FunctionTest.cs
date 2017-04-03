@@ -1,9 +1,10 @@
+using System;
 using System.Linq;
 using System.IO;
 using System.Xml.Linq;
 using Xunit;
 
-namespace FetchMorningReport.Tests {
+namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
     public class FunctionTest {
 
         //--- Methods ---
@@ -19,7 +20,10 @@ namespace FetchMorningReport.Tests {
 
             // assert
             Assert.NotNull(morningReport.Title);
-            Assert.NotNull(morningReport.Contents);
+            Assert.NotNull(morningReport.Date);
+            Assert.NotNull(morningReport.Author);
+            Assert.NotNull(morningReport.Ssml);
+            Assert.NotNull(morningReport.Text);
         }
 
         [Fact]

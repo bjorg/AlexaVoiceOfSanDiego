@@ -16,6 +16,6 @@
   "function-memory-size": 256,
   "function-timeout": 60,
   "function-name": "VOSD-FetchPodcasts",
-  "function-handler": "FetchPodcasts::FetchPodcasts.Function::FunctionHandler",
+  "function-handler": "FetchPodcasts::VoiceOfSanDiego.Alexa.FetchPodcasts.Function::FunctionHandler",
   "function-role": "VOSD-FetchPodcasts"
 }
