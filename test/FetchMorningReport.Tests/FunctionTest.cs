@@ -1,6 +1,4 @@
-using System;
 using System.Linq;
-using System.IO;
 using System.Xml.Linq;
 using Xunit;
 
@@ -22,8 +20,7 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
             Assert.NotNull(morningReport.Title);
             Assert.NotNull(morningReport.Date);
             Assert.NotNull(morningReport.Author);
-            Assert.NotNull(morningReport.Ssml);
-            Assert.NotNull(morningReport.Text);
+            Assert.NotNull(morningReport.Document);
         }
 
         [Fact]
@@ -37,21 +34,6 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
 
             // assert
             Assert.Equal("rss", rss.Elements().First().Name);
-        }
-
-        [Fact]
-        public void ConvertEncodedContentsToSsml() {
-
-            // arrange
-            var function = new Function(null, null);
-            var title = "Morning Report Title";
-            var contents = File.ReadAllText("../../../morning-report.txt");
-
-            // act
-            var text = function.ConvertContentsToSsml(title, contents);
-
-            // assert
-            // Console.WriteLine(text);
         }
     }
 }

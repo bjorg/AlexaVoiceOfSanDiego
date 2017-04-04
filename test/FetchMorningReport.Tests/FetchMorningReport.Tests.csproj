@@ -16,5 +16,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Common\Common.csproj" />
     <ProjectReference Include="..\..\src\FetchMorningReport\FetchMorningReport.csproj" />
+    <ProjectReference Include="..\..\src\MorningReportLogic\MorningReportLogic.csproj" />
   </ItemGroup>
 </Project>

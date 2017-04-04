@@ -90,11 +90,11 @@ namespace VoiceOfSanDiego.Alexa.FetchPodcasts {
                 ?.Elements("item")
                 ?.Take(_podcastsLimit)
                 ?.Select(item => {
-                    var url = item.Element("enclosure").Attribute("url").Value.Replace("http://", "https://");
                     return new PodcastInfo {
                         Title = item.Element("title").Value,
-                        Url = url,
-                        Token = new Guid(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(url))).ToString()
+                        Date = Utils.ParseDate(item.Element("pubDate").Value),
+                        Url = item.Element("enclosure").Attribute("url").Value.Replace("http://", "https://"),
+                        Token = item.Element("guid").Value
                     };
                 })
                 ?.ToArray() ?? new PodcastInfo[0];

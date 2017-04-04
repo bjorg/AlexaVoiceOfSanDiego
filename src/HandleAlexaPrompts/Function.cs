@@ -11,7 +11,8 @@ using Amazon.DynamoDBv2.Model;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net;
-using Newtonsoft.Json.Linq;
+using VoiceOfSanDiego.Alexa.Common;
+using VoiceOfSanDiego.Alexa.MorningReport;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -26,6 +27,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
         private const string PROMPT_NOT_UNDERSTOOD = "Sorry, I don't know what you mean.";
         private const string PROMPT_ERROR_MORNING_REPORT = "Sorry, there was an error reading the morning report. Please try again later.";
         private const string PROMPT_ERROR_PODCAST = "Sorry, there was an error playing the podcast. Please try again later.";
+        private const string PROMPT_ERROR_WHAT_IS_NEW = "Sorry, there was an error playing the podcast. Please try again later.";
         private const string INTENT_READ_MORNING_REPORT = "ReadMorningReport";
         private const string INTENT_PLAY_PODCAST = "PlayPodcast";
         private const string INTENT_HELP_ME = "HelpMe";
@@ -33,6 +35,9 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
 
         //--- Fields ---
         private readonly string _dynamoTable;
+        private readonly string _preHeadingBreak = "1500ms";
+        private readonly string _postHeadingBreak = "1s";
+        private readonly string _bulletBreak = "500ms";
         private readonly AmazonDynamoDBClient _dynamoClient = new AmazonDynamoDBClient(RegionEndpoint.USEast1);
 
         //--- Constructors ---
@@ -40,6 +45,11 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
 
             // read mandatory lambda function settings; without these, nothing works!
             _dynamoTable = Environment.GetEnvironmentVariable("dynamo_table");
+
+            // read optional lambda function settings
+            _preHeadingBreak = Environment.GetEnvironmentVariable("pre_heading_break") ?? _preHeadingBreak;
+            _postHeadingBreak = Environment.GetEnvironmentVariable("post_heading_break") ?? _postHeadingBreak;
+            _bulletBreak = Environment.GetEnvironmentVariable("bullet_break") ?? _bulletBreak;
         }
 
         public async Task<SkillResponse> FunctionHandler(SkillRequest skill, ILambdaContext context) {
@@ -96,18 +106,14 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
             if((response.HttpStatusCode != HttpStatusCode.OK) || !response.Item.TryGetValue("Value", out value)) {
                 return BuildSpeechResponse(PROMPT_ERROR_MORNING_REPORT);
             }
-            var json = JObject.Parse(value.S);
-            var title = (string)json["Title"];
-            var date = json["Date"];
-            var author = (string)json["Author"];
-            var ssml = (string)json["Ssml"];
-            var text = (string)json["Text"];
+            var morningReport = JsonConvert.DeserializeObject<MorningReportInfo>(value.S);
             return new SkillResponse {
                 Version = "1.0",
                 Response = new ResponseBody {
                     OutputSpeech = new SsmlOutputSpeech {
-                        Ssml = ssml
+                        Ssml = morningReport.ConvertContentsToSsml(_preHeadingBreak, _postHeadingBreak, _bulletBreak)
                     },
+                    Card = BuildCard(morningReport.ConvertContentsToText()),
                     ShouldEndSession = true
                 }
             };
@@ -122,11 +128,9 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 return BuildSpeechResponse(PROMPT_ERROR_PODCAST);
             }
             try {
-                var json = JArray.Parse(value.S);
-                var title = (string)json[podcastIndex]["Title"];
-                var url = (string)json[podcastIndex]["Url"];
-                var token = (string)json[podcastIndex]["Token"];
-                var prompt = $"Playing podcast entitled: \"{title}\"";
+                var list = JsonConvert.DeserializeObject<PodcastInfo[]>(value.S);
+                var item = list[podcastIndex];
+                var prompt = $"Playing podcast entitled: \"{item.Title}\"";
                 var result = new SkillResponse {
                     Version = "1.0",
                     Response = new ResponseBody {
@@ -141,16 +145,62 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                     PlayBehavior = PlayBehavior.ReplaceAll,
                     AudioItem = new AudioItem() {
                         Stream = new AudioItemStream() {
-                            Url = url,
-                            Token = token
+                            Url = item.Url,
+                            Token = item.Token
                         }
                     }
                 });
                 return result;
             } catch(Exception e) {
-                LambdaLogger.Log($"ERROR: unable to parse podcst #{podcastIndex} ({e})");
+                LambdaLogger.Log($"ERROR: unable to parse podcast #{podcastIndex} ({e})");
                 return BuildSpeechResponse(PROMPT_ERROR_PODCAST);
             }
+        }
+
+        private async Task<SkillResponse> BuildWhatsNewResponseAsync() {
+            var response = await _dynamoClient.BatchGetItemAsync(new Dictionary<string, KeysAndAttributes> {
+                [_dynamoTable] = new KeysAndAttributes {
+                    Keys = new List<Dictionary<string, AttributeValue>> {
+                        new Dictionary<string, AttributeValue> {
+                            ["Key"] = new AttributeValue { S = "podcasts" }
+                        },
+                        new Dictionary<string, AttributeValue> {
+                            ["Key"] = new AttributeValue { S = "morningreport" }
+                        }
+                    }
+                }
+            });
+            List<Dictionary<string, AttributeValue>> rows;
+            if((response.HttpStatusCode != HttpStatusCode.OK) || !response.Responses.TryGetValue(_dynamoTable, out rows)) {
+                return BuildSpeechResponse(PROMPT_ERROR_WHAT_IS_NEW);
+            }
+            MorningReportInfo morningReport = null;
+            PodcastInfo podcast = null;
+            foreach(var row in rows) {
+                try {
+                    switch(row["Key"].S) {
+                        case "morningreport":
+                            morningReport = JsonConvert.DeserializeObject<MorningReportInfo>(row["Value"].S);
+                            break;
+                        case "podcasts":
+                            podcast = JsonConvert.DeserializeObject<PodcastInfo[]>(row["Value"].S)[0];
+                            break;
+                        default:
+
+                            // unexpected item; just ignore it
+                            break;
+                    }
+                } catch(Exception e) {
+                    LambdaLogger.Log($"ERROR: unable to parse item ({e})");
+                }
+            }
+            if((morningReport == null) && (podcast == null)) {
+                return BuildSpeechResponse(PROMPT_ERROR_WHAT_IS_NEW);
+            }
+
+            var news = $"The latest morning reported is entitled: \"{morningReport.Title}\" and was published on {morningReport.Date}.\n" +
+                $"The latest podcast is entitled: \"{podcast.Title}\" and was published on {podcast.Date}";
+            return BuildSpeechResponse(news);
         }
 
         private SkillResponse BuildSpeechResponse(string prompt, string reprompt = null, bool shouldEndSession = true) {
