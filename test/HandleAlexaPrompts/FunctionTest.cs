@@ -6,11 +6,6 @@ namespace HandleAlexaPrompts {
 
         //--- Methods ---
 
-        [Fact]
-        public void Test1() {
-
-        }
-
         // [Fact]
         // public void ConvertEncodedContentsToSsml() {
 

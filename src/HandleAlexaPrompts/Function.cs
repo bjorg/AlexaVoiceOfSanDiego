@@ -25,7 +25,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
         private const string PROMPT_WELCOME = "Welcome to Voice of San Diego! ";
         private const string PROMPT_HELP = "To hear the morning report, say: \"Alexa, ask Voice to read me the morning report.\" "
             + "To listen to the most recent podcast, say: \"Alexa, ask Voice to play the most recent podcast.\" "
-            + "Or, to just listen the headlines, say: \"Alexa, ask Voice what's new.\" ";
+            + "Or, to find out what is available, say: \"Alexa, ask Voice what's new.\" ";
         private const string PROMPT_GOOD_BYE = "Thank you and good bye! ";
         private const string PROMPT_NOT_SUPPORTED = "Sorry, that command is not yet supported. ";
         private const string PROMPT_NOT_UNDERSTOOD = "Sorry, I don't know what you mean. ";
@@ -83,7 +83,6 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 case INTENT_WHAT_IS_NEW:
                     return await BuildWhatsNewResponseAsync();
 
-
                 // built-in audio player intents
                 case BuiltInIntent.Stop:
                 case BuiltInIntent.Cancel:
@@ -103,10 +102,12 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                     return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP);
                 }
 
+            // skill session ended
             case SessionEndedRequest ended:
                 LambdaLogger.Log("session ended");
                 return null;
 
+            // unknown skill received
             default:
                 LambdaLogger.Log($"WARNING: unrecognized skill request: {JsonConvert.SerializeObject(skill)}");
                 return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP);
@@ -128,7 +129,6 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                     OutputSpeech = new SsmlOutputSpeech {
                         Ssml = morningReport.ConvertContentsToSsml(_preHeadingBreak, _postHeadingBreak, _bulletBreak)
                     },
-                    Card = BuildCard(morningReport.ConvertContentsToText()),
                     ShouldEndSession = true
                 }
             };
@@ -152,7 +152,6 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                         OutputSpeech = new PlainTextOutputSpeech {
                             Text = prompt
                         },
-                        Card = BuildCard(prompt),
                         ShouldEndSession = true
                     }
                 };
@@ -231,7 +230,6 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                     OutputSpeech = new PlainTextOutputSpeech {
                         Text = prompt
                     },
-                    Card = BuildCard(prompt),
                     Reprompt = (reprompt != null) ? new Reprompt {
                         OutputSpeech = new PlainTextOutputSpeech {
                             Text = reprompt
@@ -239,13 +237,6 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                     } : null,
                     ShouldEndSession = shouldEndSession
                 }
-            };
-        }
-
-        private ICard BuildCard(string prompt) {
-            return new SimpleCard {
-                Title = "Voice of San Diego",
-                Content = prompt
             };
         }
     }

@@ -1,6 +1,8 @@
+using System;
 using System.Linq;
 using System.Xml.Linq;
 using Xunit;
+using VoiceOfSanDiego.Alexa.MorningReport;
 
 namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
     public class FunctionTest {

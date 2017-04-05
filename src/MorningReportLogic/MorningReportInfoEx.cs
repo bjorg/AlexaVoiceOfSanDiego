@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -14,40 +16,68 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
             this MorningReportInfo morningReport,
             string _preHeadingBreak = "750ms",
             string _postHeadingBreak = "250ms",
-            string _bulletBreak = "750ms"
+            string _bulletBreak = "750ms",
+            int maxLength = 7500
         ) {
 
-            // extract all inner text nodes
-            var ssml = new XDocument(new XElement("speak"));
-            var root = ssml.Root;
-
-            // add title when present
-            if(morningReport.Title != null) {
-                root.Add(new XText(morningReport.Title + " "));
-                root.Add(new XElement("break", new XAttribute("time", _postHeadingBreak)));
-            }
+            // extract contents into sections and sentences
+            var buffer = new StringBuilder();
+            var sections = new List<(string Title, List<string> Sentences)>();
+            sections.Add((Title: morningReport.Title, Sentences: new List<string>()));
+            Visit(morningReport.Document.Root);
+            sections.Last().Sentences.Add($"This was the morning report by {morningReport.Author}, published on {morningReport.Date:dddd, MMMM d, yyyy}.");
 
             // convert HTML to SSML format
-            Visit(root, morningReport.Document.Root);
+            var ssml = new XDocument(new XElement("speak"));
+            var root = ssml.Root;
+            var currentLength = 0;
+            var firstHeading = true;
+            foreach(var section in sections) {
+                var accumulator = new XElement("acc");
+                if(!firstHeading) {
+                    accumulator.Add(new XElement("break", new XAttribute("time", _preHeadingBreak)));
+                }
+                firstHeading = false;
+                accumulator.Add(new XText(section.Title));
+                accumulator.Add(new XElement("break", new XAttribute("time", _postHeadingBreak)));
+                foreach(var sentence in section.Sentences) {
+                    if(sentence.StartsWith("\u2022")) {
+                        accumulator.Add(new XElement("break", new XAttribute("time", _bulletBreak)));
+                        accumulator.Add(new XText(sentence));
+                    } else {
+                        accumulator.Add(new XElement("p", new XText(sentence)));
+                    }
+                }
+                var accumulatorLength = accumulator.ToString().Length;
+                if(currentLength + accumulatorLength > maxLength) {
+                    break;
+                }
+                foreach(var node in accumulator.Nodes()) {
+                    root.Add(node);
+                }
+                currentLength += accumulatorLength;
+            }
             root.Add(new XElement("p", new XText($"This was the morning report by {morningReport.Author}, published on {morningReport.Date:dddd, MMMM d, yyyy}.")));
             return ssml.ToString();
 
             //--- Local Functions ---
-            void VisitNodes(XElement parent, XElement element) {
+            void VisitNodes(XElement element) {
                 foreach(var node in element.Nodes()) {
-                    Visit(parent, node);
+                    Visit(node);
                 }
             }
 
-            void Visit(XElement parent, XNode node) {
+            void Visit(XNode node) {
                 switch(node) {
                 case XElement xelement:
                     var name = xelement.Name.ToString();
                     switch(name) {
                     case "p":
-                        var p = new XElement("p");
-                        parent.Add(p);
-                        VisitNodes(p, xelement);
+                        VisitNodes(xelement);
+                        if(buffer.Length > 0) {
+                            sections.Last().Sentences.Add(buffer.ToString());
+                            buffer.Clear();
+                        }
                         break;
                     case "h1":
                     case "h2":
@@ -55,23 +85,27 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
                     case "h4":
                     case "h5":
                     case "h6":
-                        parent.Add(new XElement("break", new XAttribute("time", _preHeadingBreak)));
-                        VisitNodes(parent, xelement);
-                        parent.Add(new XElement("break", new XAttribute("time", _postHeadingBreak)));
+                        if(buffer.Length > 0) {
+                            sections.Last().Sentences.Add(buffer.ToString());
+                            buffer.Clear();
+                        }
+                        VisitNodes(xelement);
+                        sections.Add((Title: buffer.ToString().Trim(), Sentences: new List<string>()));
+                        buffer.Clear();
                         break;
                     default:
-                        VisitNodes(parent, xelement);
+                        VisitNodes(xelement);
                         break;
                     }
                     break;
                 case XText xtext:
-                    var decodedText = DecodeHtmlEntities(xtext.Value);
-
-                    // add bauses to bullet points
-                    if(decodedText.TrimStart().StartsWith("\u2022")) {
-                        parent.Add(new XElement("break", new XAttribute("time", _bulletBreak)));
+                    var decodedText = DecodeHtmlEntities(xtext.Value).Trim();
+                    if(decodedText.Length > 0) {
+                        if(buffer.Length > 0) {
+                            buffer.Append(' ');
+                        }
+                        buffer.Append(decodedText);
                     }
-                    parent.Add(new XText(decodedText));
                     break;
                 }
             }

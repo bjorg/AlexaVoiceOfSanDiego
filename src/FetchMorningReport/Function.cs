@@ -9,7 +9,6 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Core;
 using HtmlAgilityPack;
-using Newtonsoft.Json;
 using VoiceOfSanDiego.Alexa.Common;
 using VoiceOfSanDiego.Alexa.MorningReport;
 
