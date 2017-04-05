@@ -22,13 +22,16 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
     public class Function {
 
         //--- Constants ---
-        private const string PROMPT_WELCOME = "Welcome to Voice of San Diego!";
-        private const string PROMPT_HELP = "If you would like to hear the morning report, say 'Alexa, ask Voice to read me the morning report'.'";
-        private const string PROMPT_NOT_SUPPORTED = "Sorry, that command is not yet supported.";
-        private const string PROMPT_NOT_UNDERSTOOD = "Sorry, I don't know what you mean.";
-        private const string PROMPT_ERROR_MORNING_REPORT = "Sorry, there was an error reading the morning report. Please try again later.";
-        private const string PROMPT_ERROR_PODCAST = "Sorry, there was an error playing the podcast. Please try again later.";
-        private const string PROMPT_ERROR_WHAT_IS_NEW = "Sorry, there was an error playing the podcast. Please try again later.";
+        private const string PROMPT_WELCOME = "Welcome to Voice of San Diego! ";
+        private const string PROMPT_HELP = "To hear the morning report, say: \"Alexa, ask Voice to read me the morning report.\" "
+            + "To listen to the most recent podcast, say: \"Alexa, ask Voice to play the most recent podcast.\" "
+            + "Or, to just listen the headlines, say: \"Alexa, ask Voice what's new.\" ";
+        private const string PROMPT_GOOD_BYE = "Thank you and good bye! ";
+        private const string PROMPT_NOT_SUPPORTED = "Sorry, that command is not yet supported. ";
+        private const string PROMPT_NOT_UNDERSTOOD = "Sorry, I don't know what you mean. ";
+        private const string PROMPT_ERROR_MORNING_REPORT = "Sorry, there was an error reading the morning report. Please try again later. ";
+        private const string PROMPT_ERROR_PODCAST = "Sorry, there was an error playing the podcast. Please try again later. ";
+        private const string PROMPT_ERROR_WHAT_IS_NEW = "Sorry, there was an error playing the podcast. Please try again later. ";
         private const string INTENT_READ_MORNING_REPORT = "ReadMorningReport";
         private const string INTENT_PLAY_PODCAST = "PlayPodcast";
         private const string INTENT_HELP_ME = "HelpMe";
@@ -54,49 +57,59 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
         }
 
         public async Task<SkillResponse> FunctionHandler(SkillRequest skill, ILambdaContext context) {
-            LambdaLogger.Log($"received skill request ({skill.Request.GetType().Name}): request-id={skill.Request.RequestId}; session-id={skill.Session.SessionId}");
             if(_dynamoTable == null) {
                 throw new Exception("missing configuration value 'dynamo_table'");
             }
 
             // decode skill request
-            try {
-                switch(skill.Request) {
-                case LaunchRequest launch:
-                    return BuildSpeechResponse(prompt: PROMPT_WELCOME, reprompt: PROMPT_HELP);
-                case IntentRequest intent:
-                    LambdaLogger.Log($"intent: {intent.Intent.Name}");
-                    switch(intent.Intent.Name) {
-                    case INTENT_READ_MORNING_REPORT:
-                        return await BuildMorningReportResponseAsync();
-                    case INTENT_PLAY_PODCAST:
-                        return await BuildPodcastResponseAsync(0);
-                    case INTENT_HELP_ME:
-                        return BuildSpeechResponse(PROMPT_NOT_SUPPORTED, reprompt: PROMPT_HELP);
-                    case INTENT_WHAT_IS_NEW:
-                        return await BuildWhatsNewResponseAsync();
-                    case BuiltInIntent.Stop:
-                    case BuiltInIntent.Cancel:
-                    case BuiltInIntent.Pause:
+            switch(skill.Request) {
 
-                        // nothing to do
-                        return null;
-                    case BuiltInIntent.Resume:
-                        LambdaLogger.Log("WARNING: not implemented");
-                        return BuildSpeechResponse(PROMPT_NOT_SUPPORTED, reprompt: PROMPT_HELP);
-                    default:
-                        LambdaLogger.Log("WARNING: intent not recognized");
-                        return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD, reprompt: PROMPT_HELP);
-                    }
-                case SessionEndedRequest ended:
-                    LambdaLogger.Log("session ended");
-                    return null;
+            // skill was activated without an intent
+            case LaunchRequest launch:
+                return BuildSpeechResponse(PROMPT_WELCOME + PROMPT_HELP);
+
+            // skill was activated with an intent
+            case IntentRequest intent:
+                LambdaLogger.Log($"intent: {intent.Intent.Name}");
+                switch(intent.Intent.Name) {
+
+                // custom intents
+                case INTENT_READ_MORNING_REPORT:
+                    return await BuildMorningReportResponseAsync();
+                case INTENT_PLAY_PODCAST:
+                    return await BuildPodcastResponseAsync(0);
+                case INTENT_HELP_ME:
+                    return BuildSpeechResponse(PROMPT_HELP);
+                case INTENT_WHAT_IS_NEW:
+                    return await BuildWhatsNewResponseAsync();
+
+
+                // built-in audio player intents
+                case BuiltInIntent.Stop:
+                case BuiltInIntent.Cancel:
+                case BuiltInIntent.Pause:
+
+                    // nothing to do
+                    return BuildSpeechResponse(PROMPT_GOOD_BYE);
+                case BuiltInIntent.Resume:
+
+                    // TODO (bjorg, 2017-04-05): need to figure out what the proper response should be
+                    LambdaLogger.Log("WARNING: not implemented");
+                    return BuildSpeechResponse(PROMPT_NOT_SUPPORTED);
+
+                // unknown intent
                 default:
-                    LambdaLogger.Log($"unrecognized skill request: {JsonConvert.SerializeObject(skill)}");
-                    return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD, reprompt: PROMPT_HELP);
+                    LambdaLogger.Log("WARNING: intent not recognized");
+                    return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP);
                 }
-            } finally {
-                LambdaLogger.Log($"finished skill request: request-id={skill.Request.RequestId}; session-id={skill.Session.SessionId}");
+
+            case SessionEndedRequest ended:
+                LambdaLogger.Log("session ended");
+                return null;
+
+            default:
+                LambdaLogger.Log($"WARNING: unrecognized skill request: {JsonConvert.SerializeObject(skill)}");
+                return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP);
             }
         }
 
