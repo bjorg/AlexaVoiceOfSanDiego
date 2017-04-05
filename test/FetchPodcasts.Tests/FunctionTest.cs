@@ -2,6 +2,7 @@ using System.Linq;
 using System.Xml.Linq;
 using Xunit;
 using VoiceOfSanDiego.Alexa.Common;
+using VoiceOfSanDiego.Alexa.Podcasts;
 
 namespace VoiceOfSanDiego.Alexa.FetchPodcasts.Tests {
 

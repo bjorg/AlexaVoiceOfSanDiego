@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Net;
 using VoiceOfSanDiego.Alexa.Common;
 using VoiceOfSanDiego.Alexa.MorningReport;
+using VoiceOfSanDiego.Alexa.Podcasts;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -121,7 +122,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
 
         private async Task<SkillResponse> BuildPodcastResponseAsync(int podcastIndex) {
             var response = await _dynamoClient.GetItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
-                ["Key"] = new AttributeValue { S = "podcasts" }
+                ["Key"] = new AttributeValue { S = PodcastInfo.ROW_KEY }
             });
             AttributeValue value = null;
             if((response.HttpStatusCode != HttpStatusCode.OK) || !response.Item.TryGetValue("Value", out value)) {
@@ -162,7 +163,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 [_dynamoTable] = new KeysAndAttributes {
                     Keys = new List<Dictionary<string, AttributeValue>> {
                         new Dictionary<string, AttributeValue> {
-                            ["Key"] = new AttributeValue { S = "podcasts" }
+                            ["Key"] = new AttributeValue { S = PodcastInfo.ROW_KEY }
                         },
                         new Dictionary<string, AttributeValue> {
                             ["Key"] = new AttributeValue { S = MorningReportInfo.ROW_KEY }
@@ -182,7 +183,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                         case MorningReportInfo.ROW_KEY:
                             morningReport = MorningReportInfo.FromJson(row["Value"].S);
                             break;
-                        case "podcasts":
+                        case PodcastInfo.ROW_KEY:
                             podcast = JsonConvert.DeserializeObject<PodcastInfo[]>(row["Value"].S)[0];
                             break;
                         default:

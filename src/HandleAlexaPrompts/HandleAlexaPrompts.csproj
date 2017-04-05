@@ -15,5 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Common\Common.csproj" />
     <ProjectReference Include="..\..\src\MorningReportLogic\MorningReportLogic.csproj" />
+    <ProjectReference Include="..\..\src\PodcastsLogic\PodcastsLogic.csproj" />
   </ItemGroup>
 </Project>

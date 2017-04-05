@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Amazon;
@@ -12,6 +10,7 @@ using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Core;
 using Newtonsoft.Json;
 using VoiceOfSanDiego.Alexa.Common;
+using VoiceOfSanDiego.Alexa.Podcasts;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -92,7 +91,7 @@ namespace VoiceOfSanDiego.Alexa.FetchPodcasts {
                 ?.Select(item => {
                     return new PodcastInfo {
                         Title = item.Element("title").Value,
-                        Date = Utils.ParseDate(item.Element("pubDate").Value),
+                        Date = Utils.ParseDate(item.Element("pubDate").Value) ?? DateTime.UtcNow.Date,
                         Url = item.Element("enclosure").Attribute("url").Value.Replace("http://", "https://"),
                         Token = item.Element("guid").Value
                     };
