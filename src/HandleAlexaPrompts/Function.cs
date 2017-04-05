@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Net;
 using VoiceOfSanDiego.Alexa.MorningReport;
 using VoiceOfSanDiego.Alexa.Podcasts;
+using System.Text;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -71,8 +72,9 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                     case INTENT_PLAY_PODCAST:
                         return await BuildPodcastResponseAsync(0);
                     case INTENT_HELP_ME:
-                    case INTENT_WHAT_IS_NEW:
                         return BuildSpeechResponse(PROMPT_NOT_SUPPORTED, reprompt: PROMPT_HELP);
+                    case INTENT_WHAT_IS_NEW:
+                        return await BuildWhatsNewResponseAsync();
                     case BuiltInIntent.Stop:
                     case BuiltInIntent.Cancel:
                     case BuiltInIntent.Pause:
@@ -175,7 +177,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 return BuildSpeechResponse(PROMPT_ERROR_WHAT_IS_NEW);
             }
             MorningReportInfo morningReport = null;
-            PodcastInfo podcast = null;
+            PodcastInfo[] podcasts = null;
             foreach(var row in rows) {
                 try {
                     switch(row["Key"].S) {
@@ -183,24 +185,30 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                             morningReport = MorningReportInfo.FromJson(row["Value"].S);
                             break;
                         case PodcastInfo.ROW_KEY:
-                            podcast = JsonConvert.DeserializeObject<PodcastInfo[]>(row["Value"].S)[0];
+                            podcasts = PodcastInfo.FromJson(row["Value"].S);
                             break;
                         default:
 
-                            // unexpected item; just ignore it
+                            // unexpected item; ignore it
                             break;
                     }
                 } catch(Exception e) {
+
+                    // log the exception and continue
                     LambdaLogger.Log($"ERROR: unable to parse item ({e})");
                 }
             }
-            if((morningReport == null) && (podcast == null)) {
+            if((morningReport == null) && (podcasts == null)) {
                 return BuildSpeechResponse(PROMPT_ERROR_WHAT_IS_NEW);
             }
-
-            var news = $"The latest morning reported is entitled: \"{morningReport.Title}\" and was published on {morningReport.Date}.\n" +
-                $"The latest podcast is entitled: \"{podcast.Title}\" and was published on {podcast.Date}";
-            return BuildSpeechResponse(news);
+            var news = new StringBuilder();
+            if(morningReport != null) {
+                news.AppendLine($"The latest morning report is from {morningReport.Date.ToString("dddd, MMMM d, yyyy")}, and is entitled: \"{morningReport.Title}\".");
+            }
+            if((podcasts != null) && (podcasts.Length > 0)) {
+                news.AppendLine($"The latest podcast was recorded {podcasts[0].Date.ToString("dddd, MMMM d, yyyy")}, and is entitled: \"{podcasts[0].Title}\".");
+            }
+            return BuildSpeechResponse(news.ToString());
         }
 
         private SkillResponse BuildSpeechResponse(string prompt, string reprompt = null, bool shouldEndSession = true) {

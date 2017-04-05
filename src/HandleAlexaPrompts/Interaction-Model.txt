@@ -7,10 +7,10 @@
       "intent": "PlayPodcast"
     },
     {
-      "intent": "HelpMe"
+      "intent": "WhatIsNew"
     },
     {
-      "intent": "WhatIsNew"
+      "intent": "HelpMe"
     },
     {
       "intent": "AMAZON.ResumeIntent"
@@ -45,11 +45,11 @@ PlayPodcast to play the most recent podcast
 PlayPodcast play podcast
 PlayPodcast podcast
 
+WhatIsNew what is new
+WhatIsNew what's new
+
 HelpMe what to do
 HelpMe what can I do
 HelpMe for help
 HelpMe to help me
 HelpMe help
-
-WhatIsNew what is new
-WhatIsNew what's new
