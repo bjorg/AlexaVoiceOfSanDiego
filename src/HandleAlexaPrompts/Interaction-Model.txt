@@ -41,10 +41,19 @@ ReadMorningReport about the morning report
 ReadMorningReport about morning report
 ReadMorningReport morning report
 
+PlayPodcast to play me the most recent podcast
 PlayPodcast to play the most recent podcast
+PlayPodcast to play the podcast
+PlayPodcast to play podcast
 PlayPodcast play podcast
 PlayPodcast podcast
 
+WhatIsNew what is the latest news
+WhatIsNew give me the latest news
+WhatIsNew what is the most recent news
+WhatIsNew give me the most recent news
+WhatIsNew latest news
+WhatIsNew most recent news
 WhatIsNew what is new
 WhatIsNew what's new
 
