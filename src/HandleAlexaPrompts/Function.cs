@@ -203,10 +203,10 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
             }
             var news = new StringBuilder();
             if(morningReport != null) {
-                news.AppendLine($"The latest morning report is from {morningReport.Date.ToString("dddd, MMMM d, yyyy")}, and is entitled: \"{morningReport.Title}\".");
+                news.AppendLine($"The latest morning report is from {morningReport.Date.ToString("dddd, MMMM d")}, and is entitled: \"{morningReport.Title}\".");
             }
             if((podcasts != null) && (podcasts.Length > 0)) {
-                news.AppendLine($"The latest podcast was recorded {podcasts[0].Date.ToString("dddd, MMMM d, yyyy")}, and is entitled: \"{podcasts[0].Title}\".");
+                news.AppendLine($"The latest podcast was recorded {podcasts[0].Date.ToString("dddd, MMMM d")}, and is entitled: \"{podcasts[0].Title}\".");
             }
             return BuildSpeechResponse(news.ToString());
         }
