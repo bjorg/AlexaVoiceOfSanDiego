@@ -35,9 +35,9 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
 
         //--- Fields ---
         private readonly string _dynamoTable;
-        private readonly string _preHeadingBreak = "1500ms";
-        private readonly string _postHeadingBreak = "1s";
-        private readonly string _bulletBreak = "500ms";
+        private readonly string _preHeadingBreak = "750ms";
+        private readonly string _postHeadingBreak = "250ms";
+        private readonly string _bulletBreak = "750ms";
         private readonly AmazonDynamoDBClient _dynamoClient = new AmazonDynamoDBClient(RegionEndpoint.USEast1);
 
         //--- Constructors ---
@@ -75,11 +75,11 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                         return BuildSpeechResponse(PROMPT_NOT_SUPPORTED, reprompt: PROMPT_HELP);
                     case BuiltInIntent.Stop:
                     case BuiltInIntent.Cancel:
+                    case BuiltInIntent.Pause:
 
                         // nothing to do
                         return null;
                     case BuiltInIntent.Resume:
-                    case BuiltInIntent.Pause:
                         LambdaLogger.Log("WARNING: not implemented");
                         return BuildSpeechResponse(PROMPT_NOT_SUPPORTED, reprompt: PROMPT_HELP);
                     default:
@@ -100,13 +100,13 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
 
         private async Task<SkillResponse> BuildMorningReportResponseAsync() {
             var response = await _dynamoClient.GetItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
-                ["Key"] = new AttributeValue { S = "morningreport" }
+                ["Key"] = new AttributeValue { S = MorningReportInfo.ROW_KEY }
             });
             AttributeValue value = null;
             if((response.HttpStatusCode != HttpStatusCode.OK) || !response.Item.TryGetValue("Value", out value)) {
                 return BuildSpeechResponse(PROMPT_ERROR_MORNING_REPORT);
             }
-            var morningReport = JsonConvert.DeserializeObject<MorningReportInfo>(value.S);
+            var morningReport = MorningReportInfo.FromJson(value.S);
             return new SkillResponse {
                 Version = "1.0",
                 Response = new ResponseBody {
@@ -165,7 +165,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                             ["Key"] = new AttributeValue { S = "podcasts" }
                         },
                         new Dictionary<string, AttributeValue> {
-                            ["Key"] = new AttributeValue { S = "morningreport" }
+                            ["Key"] = new AttributeValue { S = MorningReportInfo.ROW_KEY }
                         }
                     }
                 }
@@ -179,8 +179,8 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
             foreach(var row in rows) {
                 try {
                     switch(row["Key"].S) {
-                        case "morningreport":
-                            morningReport = JsonConvert.DeserializeObject<MorningReportInfo>(row["Value"].S);
+                        case MorningReportInfo.ROW_KEY:
+                            morningReport = MorningReportInfo.FromJson(row["Value"].S);
                             break;
                         case "podcasts":
                             podcast = JsonConvert.DeserializeObject<PodcastInfo[]>(row["Value"].S)[0];

@@ -104,7 +104,7 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport {
             }
             return new MorningReportInfo {
                 Title = title,
-                Date = date,
+                Date = date ?? DateTime.UtcNow.Date,
                 Author  = author,
                 Document = doc
             };
@@ -115,8 +115,8 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport {
                 return false;
             }
             var response = await _dynamoClient.PutItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
-                ["Key"] = new AttributeValue { S = "morningreport" },
-                ["Value"] = new AttributeValue { S = JsonConvert.SerializeObject(morningReport) },
+                ["Key"] = new AttributeValue { S = MorningReportInfo.ROW_KEY },
+                ["Value"] = new AttributeValue { S = morningReport.ToJson() },
                 ["When"] = new AttributeValue { S = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") }
             });
             return true;

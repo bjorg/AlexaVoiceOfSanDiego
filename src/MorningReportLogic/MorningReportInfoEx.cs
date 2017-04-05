@@ -10,7 +10,12 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
         private static readonly Regex _htmlEntitiesRegEx = new Regex("&(?<value>#(x[a-f0-9]+|[0-9]+)|[a-z0-9]+);", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         //--- Class Methods ---
-        public static string ConvertContentsToSsml(this MorningReportInfo morningReport, string _preHeadingBreak, string _postHeadingBreak, string _bulletBreak) {
+        public static string ConvertContentsToSsml(
+            this MorningReportInfo morningReport,
+            string _preHeadingBreak = "750ms",
+            string _postHeadingBreak = "250ms",
+            string _bulletBreak = "750ms"
+        ) {
 
             // extract all inner text nodes
             var ssml = new XDocument(new XElement("speak"));
@@ -24,6 +29,7 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
 
             // convert HTML to SSML format
             Visit(root, morningReport.Document.Root);
+            root.Add(new XElement("p", new XText($"This was the morning report by {morningReport.Author}, published on {morningReport.Date:dddd, MMMM d, yyyy}.")));
             return ssml.ToString();
 
             //--- Local Functions ---
@@ -39,8 +45,9 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
                     var name = xelement.Name.ToString();
                     switch(name) {
                     case "p":
-                        VisitNodes(parent, xelement);
-                        parent.Add(new XText(" "));
+                        var p = new XElement("p");
+                        parent.Add(p);
+                        VisitNodes(p, xelement);
                         break;
                     case "h1":
                     case "h2":
@@ -59,15 +66,12 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
                     break;
                 case XText xtext:
                     var decodedText = DecodeHtmlEntities(xtext.Value);
-                    var trimmedValue = decodedText.TrimStart();
 
-                    // replace leading bullet points with pauses
-                    if(trimmedValue.StartsWith("\u2022")) {
+                    // add bauses to bullet points
+                    if(decodedText.TrimStart().StartsWith("\u2022")) {
                         parent.Add(new XElement("break", new XAttribute("time", _bulletBreak)));
-                        parent.Add(new XText(" " + trimmedValue.Substring(1).TrimStart()));
-                    } else {
-                        parent.Add(new XText(decodedText));
                     }
+                    parent.Add(new XText(decodedText));
                     break;
                 }
             }
@@ -81,12 +85,10 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
             // add title when present
             if(morningReport.Title != null) {
                 text.AppendLine($"=== {morningReport.Title} ===");
-                if((morningReport.Date != null) && (morningReport.Author != null)) {
-                    text.Append($"{morningReport.Date.Value:dddd, MMMM d, yyyy} by {morningReport.Author}");
-                } else if(morningReport.Date != null) {
-                    text.Append(morningReport.Date.Value.ToString("dddd, MMMM d, yyyy"));
-                } else if(morningReport.Author != null) {
-                    text.Append($"by {morningReport.Author}");
+                if(morningReport.Author != null) {
+                    text.AppendLine($"{morningReport.Date:dddd, MMMM d, yyyy} by {morningReport.Author}");
+                } else {
+                    text.AppendLine(morningReport.Date.ToString("dddd, MMMM d, yyyy"));
                 }
                 text.AppendLine();
             }
@@ -110,6 +112,7 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
                     case "p":
                         VisitNodes(xelement);
                         text.AppendLine();
+                        text.AppendLine();
                         break;
                     case "h1":
                     case "h2":
@@ -117,7 +120,6 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
                     case "h4":
                     case "h5":
                     case "h6":
-                        text.AppendLine();
                         text.Append("-- ");
                         VisitNodes(xelement);
                         text.Append(" --");

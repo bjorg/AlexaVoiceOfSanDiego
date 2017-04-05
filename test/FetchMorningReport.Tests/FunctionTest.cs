@@ -1,5 +1,7 @@
+using System;
 using System.Linq;
 using System.Xml.Linq;
+using VoiceOfSanDiego.Alexa.MorningReport;
 using Xunit;
 
 namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
@@ -24,7 +26,7 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
         }
 
         [Fact]
-        public void FetchLivePodcastFeed() {
+        public void FetchLiveMorningReportFeed() {
 
             // arrange
             var function = new Function("http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/", null);
@@ -35,5 +37,43 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
             // assert
             Assert.Equal("rss", rss.Elements().First().Name);
         }
+
+#if false
+        // TODO (bjorg, 2017-04-05): move test into `MorningReportLogic.Test`
+
+        [Fact]
+        public void ConvertLiveMorningReportToSsml() {
+
+            // arrange
+            var function = new Function("http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/", null);
+            var rss = function.FetchMorningReportFeedAsync().Result;
+            var morningReport = function.FindMorningReport(rss);
+
+            // act
+            var ssml = morningReport.ConvertContentsToSsml();
+
+            // assert
+            Console.WriteLine(ssml);
+        }
+#endif
+
+#if false
+        // TODO (bjorg, 2017-04-05): move test into `MorningReportLogic.Test`
+
+        [Fact]
+        public void ConvertLiveMorningReportToText() {
+
+            // arrange
+            var function = new Function("http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/", null);
+            var rss = function.FetchMorningReportFeedAsync().Result;
+            var morningReport = function.FindMorningReport(rss);
+
+            // act
+            var ssml = morningReport.ConvertContentsToText();
+
+            // assert
+            Console.WriteLine(ssml);
+        }
+#endif
     }
 }
