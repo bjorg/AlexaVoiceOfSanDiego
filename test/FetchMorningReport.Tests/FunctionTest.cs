@@ -1,7 +1,5 @@
-using System;
 using System.Linq;
 using System.Xml.Linq;
-using VoiceOfSanDiego.Alexa.MorningReport;
 using Xunit;
 
 namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {

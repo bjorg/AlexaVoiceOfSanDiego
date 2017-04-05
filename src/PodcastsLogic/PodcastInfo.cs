@@ -8,8 +8,12 @@ namespace VoiceOfSanDiego.Alexa.Podcasts {
         public const string ROW_KEY = "podcasts";
 
         //--- Class Methods ---
-        public static PodcastInfo FromJson(string json) {
-            return JsonConvert.DeserializeObject<PodcastInfo>(json);
+        public static PodcastInfo[] FromJson(string json) {
+            return JsonConvert.DeserializeObject<PodcastInfo[]>(json);
+        }
+
+        public static string ToJson(PodcastInfo[] podcasts) {
+            return JsonConvert.SerializeObject(podcasts);
         }
 
         //--- Properties ---
@@ -17,10 +21,5 @@ namespace VoiceOfSanDiego.Alexa.Podcasts {
         public DateTime Date { get; set; }
         public string Url { get; set; }
         public string Token { get; set; }
-
-        //--- Methods ---
-        public string ToJson() {
-            return JsonConvert.SerializeObject(this);
-        }
     }
 }

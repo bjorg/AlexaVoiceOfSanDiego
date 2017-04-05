@@ -101,8 +101,8 @@ namespace VoiceOfSanDiego.Alexa.FetchPodcasts {
 
         public async Task<bool> SavePodcastsAsync(PodcastInfo[] podcasts) {
             var response = await _dynamoClient.PutItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
-                ["Key"] = new AttributeValue { S = "podcasts" },
-                ["Value"] = new AttributeValue { S = JsonConvert.SerializeObject(podcasts) },
+                ["Key"] = new AttributeValue { S = PodcastInfo.ROW_KEY },
+                ["Value"] = new AttributeValue { S = PodcastInfo.ToJson(podcasts) },
                 ["When"] = new AttributeValue { S = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") }
             });
             return true;

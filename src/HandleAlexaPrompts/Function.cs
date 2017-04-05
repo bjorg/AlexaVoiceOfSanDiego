@@ -11,7 +11,6 @@ using Amazon.DynamoDBv2.Model;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net;
-using VoiceOfSanDiego.Alexa.Common;
 using VoiceOfSanDiego.Alexa.MorningReport;
 using VoiceOfSanDiego.Alexa.Podcasts;
 
@@ -129,7 +128,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 return BuildSpeechResponse(PROMPT_ERROR_PODCAST);
             }
             try {
-                var list = JsonConvert.DeserializeObject<PodcastInfo[]>(value.S);
+                var list = PodcastInfo.FromJson(value.S);
                 var item = list[podcastIndex];
                 var prompt = $"Playing podcast entitled: \"{item.Title}\"";
                 var result = new SkillResponse {
