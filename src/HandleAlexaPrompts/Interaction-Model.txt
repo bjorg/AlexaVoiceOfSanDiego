@@ -67,7 +67,6 @@ WhatIsNew what is the latest news
 WhatIsNew give me the latest news
 WhatIsNew latest news
 WhatIsNew most recent news
-WhatIsNew latest news
 WhatIsNew what is new
 WhatIsNew what's new
 WhatIsNew listen to what is new
