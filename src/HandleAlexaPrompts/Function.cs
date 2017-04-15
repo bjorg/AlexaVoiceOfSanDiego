@@ -33,7 +33,6 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
         private const string PROMPT_ERROR_WHAT_IS_NEW = "Sorry, there was an error playing the podcast. Please try again later. ";
         private const string INTENT_READ_MORNING_REPORT = "ReadMorningReport";
         private const string INTENT_PLAY_PODCAST = "PlayPodcast";
-        private const string INTENT_HELP_ME = "HelpMe";
         private const string INTENT_WHAT_IS_NEW = "WhatIsNew";
 
         //--- Fields ---
@@ -77,22 +76,37 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                     return await BuildMorningReportResponseAsync();
                 case INTENT_PLAY_PODCAST:
                     return await BuildPodcastResponseAsync(0);
-                case INTENT_HELP_ME:
-                    return BuildSpeechResponse(PROMPT_HELP_QUESTION, shouldEndSession: false);
                 case INTENT_WHAT_IS_NEW:
                     return await BuildWhatsNewResponseAsync();
 
-                // built-in audio player intents
+                // built-in intents
+                case BuiltInIntent.Help:
+                    return BuildSpeechResponse(PROMPT_HELP_QUESTION, shouldEndSession: false);
                 case BuiltInIntent.Stop:
                 case BuiltInIntent.Cancel:
-                case BuiltInIntent.Pause:
 
                     // nothing to do
                     return BuildSpeechResponse(PROMPT_GOOD_BYE);
+                case BuiltInIntent.Pause:
+
+                    // TODO (bjorg, 2017-04-15): need to store the current playback state
+                    LambdaLogger.Log($"WARNING: not implemented ({intent.Intent.Name})");
+                    return BuildStopPodcastPlayback(PROMPT_GOOD_BYE);
+
                 case BuiltInIntent.Resume:
 
-                    // TODO (bjorg, 2017-04-05): need to figure out what the proper response should be
-                    LambdaLogger.Log("WARNING: not implemented");
+                    // TODO (bjorg, 2017-04-05): need to restore the current playback state
+                    LambdaLogger.Log($"WARNING: not implemented ({intent.Intent.Name})");
+                    return BuildSpeechResponse(PROMPT_NOT_SUPPORTED);
+                case BuiltInIntent.LoopOff:
+                case BuiltInIntent.LoopOn:
+                case BuiltInIntent.Next:
+                case BuiltInIntent.Previous:
+                case BuiltInIntent.Repeat:
+                case BuiltInIntent.ShuffleOff:
+                case BuiltInIntent.ShuffleOn:
+                case BuiltInIntent.StartOver:
+                    LambdaLogger.Log($"WARNING: not supported ({intent.Intent.Name})");
                     return BuildSpeechResponse(PROMPT_NOT_SUPPORTED);
 
                 // unknown intent
@@ -100,6 +114,11 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                     LambdaLogger.Log("WARNING: intent not recognized");
                     return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP_QUESTION, shouldEndSession: false);
                 }
+
+            // skill audio-player status changed
+            case AudioPlayerRequest audio:
+                LambdaLogger.Log($"audio: {audio.AudioRequestType}");
+                return null;
 
             // skill session ended
             case SessionEndedRequest ended:
@@ -109,7 +128,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
             // unknown skill received
             default:
                 LambdaLogger.Log($"WARNING: unrecognized skill request: {JsonConvert.SerializeObject(skill)}");
-                return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP_QUESTION, shouldEndSession: false);
+                return null;
             }
         }
 
@@ -168,6 +187,20 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 LambdaLogger.Log($"ERROR: unable to parse podcast #{podcastIndex} ({e})");
                 return BuildSpeechResponse(PROMPT_ERROR_PODCAST);
             }
+        }
+
+        private SkillResponse BuildStopPodcastPlayback(string prompt) {
+            var result = new SkillResponse {
+                Version = "1.0",
+                Response = new ResponseBody {
+                    OutputSpeech = new PlainTextOutputSpeech {
+                        Text = prompt
+                    },
+                    ShouldEndSession = true
+                }
+            };
+            result.Response.Directives.Add(new StopDirective());
+            return result;
         }
 
         private async Task<SkillResponse> BuildWhatsNewResponseAsync() {
