@@ -24,10 +24,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
         //--- Constants ---
         private const string PROMPT_WELCOME = "Welcome to Voice of San Diego! ";
 
-        private const string PROMPT_HELP_QUESTION = "Would you like to hear the morning report or the most recent podcast? ";
-        private const string PROMPT_HELP = "To hear the morning report, say: \"Alexa, ask Voice to read me the morning report.\" "
-            + "To listen to the most recent podcast, say: \"Alexa, ask Voice to play the most recent podcast.\" "
-            + "Or, to find out what is available, say: \"Alexa, ask Voice what's new.\" ";
+        private const string PROMPT_HELP_QUESTION = "Would you like to listen to what's new, the latest morning report, or the latest podcast? ";
         private const string PROMPT_GOOD_BYE = "Thank you and good bye! ";
         private const string PROMPT_NOT_SUPPORTED = "Sorry, that command is not yet supported. ";
         private const string PROMPT_NOT_UNDERSTOOD = "Sorry, I don't know what you mean. ";
@@ -222,7 +219,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
             if((podcasts != null) && (podcasts.Length > 0)) {
                 news.AppendLine($"The latest podcast was recorded {podcasts[0].Date.ToString("dddd, MMMM d")}, and is entitled: \"{podcasts[0].Title}\".");
             }
-            return BuildSpeechResponse(news.ToString());
+            return BuildSpeechResponse(news.ToString() + PROMPT_HELP_QUESTION, shouldEndSession: false);
         }
 
         private SkillResponse BuildSpeechResponse(string prompt, string reprompt = null, bool shouldEndSession = true) {
