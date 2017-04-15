@@ -74,6 +74,7 @@ WhatIsNew listen to what is new
 WhatIsNew listen to what's new
 WhatIsNew listen to latest news
 WhatIsNew listen to most recent news
+WhatIsNew listen news
 
 HelpMe what to do
 HelpMe what can I do
