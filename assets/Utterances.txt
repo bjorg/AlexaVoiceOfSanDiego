@@ -1,33 +1,3 @@
-﻿{
-  "intents": [
-    {
-      "intent": "ReadMorningReport"
-    },
-    {
-      "intent": "PlayPodcast"
-    },
-    {
-      "intent": "WhatIsNew"
-    },
-    {
-      "intent": "HelpMe"
-    },
-    {
-      "intent": "AMAZON.ResumeIntent"
-    },
-    {
-      "intent": "AMAZON.PauseIntent"
-    },
-    {
-      "intent": "AMAZON.StopIntent"
-    },
-    {
-      "intent": "AMAZON.CancelIntent"
-    }
-  ]
-}
-
-
 ReadMorningReport to read me the morning report
 ReadMorningReport to give me the morning report
 ReadMorningReport to tell me the morning report
@@ -74,9 +44,3 @@ WhatIsNew listen to what's new
 WhatIsNew listen to latest news
 WhatIsNew listen to most recent news
 WhatIsNew listen news
-
-HelpMe what to do
-HelpMe what can I do
-HelpMe for help
-HelpMe to help me
-HelpMe help

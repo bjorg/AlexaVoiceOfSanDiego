@@ -1,0 +1,28 @@
+{
+  "intents": [
+    {
+      "intent": "ReadMorningReport"
+    },
+    {
+      "intent": "PlayPodcast"
+    },
+    {
+      "intent": "WhatIsNew"
+    },
+    {
+      "intent": "AMAZON.ResumeIntent"
+    },
+    {
+      "intent": "AMAZON.PauseIntent"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.CancelIntent"
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    }
+  ]
+}
