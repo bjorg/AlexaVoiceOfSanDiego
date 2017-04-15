@@ -23,6 +23,8 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
 
         //--- Constants ---
         private const string PROMPT_WELCOME = "Welcome to Voice of San Diego! ";
+
+        private const string PROMPT_HELP_QUESTION = "Would you like to hear the morning report or the most recent podcast? ";
         private const string PROMPT_HELP = "To hear the morning report, say: \"Alexa, ask Voice to read me the morning report.\" "
             + "To listen to the most recent podcast, say: \"Alexa, ask Voice to play the most recent podcast.\" "
             + "Or, to find out what is available, say: \"Alexa, ask Voice what's new.\" ";
@@ -66,7 +68,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
 
             // skill was activated without an intent
             case LaunchRequest launch:
-                return BuildSpeechResponse(PROMPT_WELCOME + PROMPT_HELP);
+                return BuildSpeechResponse(PROMPT_WELCOME + PROMPT_HELP_QUESTION, shouldEndSession: false);
 
             // skill was activated with an intent
             case IntentRequest intent:
@@ -79,7 +81,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 case INTENT_PLAY_PODCAST:
                     return await BuildPodcastResponseAsync(0);
                 case INTENT_HELP_ME:
-                    return BuildSpeechResponse(PROMPT_HELP);
+                    return BuildSpeechResponse(PROMPT_HELP_QUESTION, shouldEndSession: false);
                 case INTENT_WHAT_IS_NEW:
                     return await BuildWhatsNewResponseAsync();
 
@@ -99,7 +101,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 // unknown intent
                 default:
                     LambdaLogger.Log("WARNING: intent not recognized");
-                    return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP);
+                    return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP_QUESTION, shouldEndSession: false);
                 }
 
             // skill session ended
@@ -110,7 +112,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
             // unknown skill received
             default:
                 LambdaLogger.Log($"WARNING: unrecognized skill request: {JsonConvert.SerializeObject(skill)}");
-                return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP);
+                return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP_QUESTION, shouldEndSession: false);
             }
         }
 
