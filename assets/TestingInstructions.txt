@@ -1,0 +1,3 @@
+This skill is intended for Amazon Echo devices as it requires support for audio playback to read podcasts. Usage is straightforward: a user can either ask to listen to the daily morning report or the most recent podcast. There are two additional commands to learn about what commands are supported and how recently the morning report or podcast were updated.
+
+The content is dynamically loaded from VoiceOfSanDiego.org, a local non-profit news organization. This account and Alexa skill are owned by Voice of San Diego.
