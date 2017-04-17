@@ -14,6 +14,7 @@ using System.Net;
 using VoiceOfSanDiego.Alexa.MorningReport;
 using VoiceOfSanDiego.Alexa.Podcasts;
 using System.Text;
+using System.Linq;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -23,17 +24,43 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
 
         //--- Constants ---
         private const string PROMPT_WELCOME = "Welcome to Voice of San Diego! ";
-
         private const string PROMPT_HELP_QUESTION = "Would you like to listen to what's new, the latest morning report, or the latest podcast? ";
-        private const string PROMPT_GOOD_BYE = "Thank you and good bye! ";
+        private const string PROMPT_GOOD_BYE = "Good bye! ";
         private const string PROMPT_NOT_SUPPORTED = "Sorry, that command is not yet supported. ";
         private const string PROMPT_NOT_UNDERSTOOD = "Sorry, I don't know what you mean. ";
         private const string PROMPT_ERROR_MORNING_REPORT = "Sorry, there was an error reading the morning report. Please try again later. ";
         private const string PROMPT_ERROR_PODCAST = "Sorry, there was an error playing the podcast. Please try again later. ";
         private const string PROMPT_ERROR_WHAT_IS_NEW = "Sorry, there was an error playing the podcast. Please try again later. ";
+        private const string PROMPT_PAUSE = " ";
+        private const string PROMPT_CANNOT_RESUME = "Sorry, I don't remember where to resume. ";
+        private const string PROMPT_PODCAST_NOT_AVAILBLE = PROMPT_CANNOT_RESUME;
         private const string INTENT_READ_MORNING_REPORT = "ReadMorningReport";
         private const string INTENT_PLAY_PODCAST = "PlayPodcast";
         private const string INTENT_WHAT_IS_NEW = "WhatIsNew";
+
+        //--- Types ---
+        private class PodcastPlaybackInfo {
+
+            //--- Fields ---
+            public string UserId;
+            public string Token;
+            public string OffsetInMillisecondsText;
+
+            //--- Properties ---
+            [JsonIgnore]
+            public int OffsetInMilliseconds {
+                get {
+                    int.TryParse(OffsetInMillisecondsText, out int value);
+                    return value;
+                }
+            }
+        }
+
+        //--- Class Methods ---
+        private static string UserIdToResumeRecordKey(string userId) {
+            var md5 = System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(userId));
+            return $"resume-{new Guid(md5):N}";
+        }
 
         //--- Fields ---
         private readonly string _dynamoTable;
@@ -64,11 +91,12 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
 
             // skill was activated without an intent
             case LaunchRequest launch:
+                LambdaLogger.Log($"*** INFO: launch");
                 return BuildSpeechResponse(PROMPT_WELCOME + PROMPT_HELP_QUESTION, shouldEndSession: false);
 
             // skill was activated with an intent
             case IntentRequest intent:
-                LambdaLogger.Log($"intent: {intent.Intent.Name}");
+                LambdaLogger.Log($"*** INFO: intent: {intent.Intent.Name}");
                 switch(intent.Intent.Name) {
 
                 // custom intents
@@ -84,20 +112,15 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                     return BuildSpeechResponse(PROMPT_HELP_QUESTION, shouldEndSession: false);
                 case BuiltInIntent.Stop:
                 case BuiltInIntent.Cancel:
-
-                    // nothing to do
-                    return BuildSpeechResponse(PROMPT_GOOD_BYE);
-                case BuiltInIntent.Pause:
-
-                    // TODO (bjorg, 2017-04-15): need to store the current playback state
-                    LambdaLogger.Log($"WARNING: not implemented ({intent.Intent.Name})");
+                    await DeletePodcastPlaybackAsync(skill.Context.System.User.UserId);
                     return BuildStopPodcastPlayback(PROMPT_GOOD_BYE);
-
+                case BuiltInIntent.Pause:
+                    return BuildStopPodcastPlayback(PROMPT_PAUSE);
                 case BuiltInIntent.Resume:
+                    var playback = await ReadPodcastPlaybackAsync(skill.Context.System.User.UserId);
+                    return await BuildResumePodcastResponseAsync(playback);
 
-                    // TODO (bjorg, 2017-04-05): need to restore the current playback state
-                    LambdaLogger.Log($"WARNING: not implemented ({intent.Intent.Name})");
-                    return BuildSpeechResponse(PROMPT_NOT_SUPPORTED);
+                // unsupported built-in intents
                 case BuiltInIntent.LoopOff:
                 case BuiltInIntent.LoopOn:
                 case BuiltInIntent.Next:
@@ -106,28 +129,69 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 case BuiltInIntent.ShuffleOff:
                 case BuiltInIntent.ShuffleOn:
                 case BuiltInIntent.StartOver:
-                    LambdaLogger.Log($"WARNING: not supported ({intent.Intent.Name})");
+                    LambdaLogger.Log($"*** WARNING: not supported ({intent.Intent.Name})");
                     return BuildSpeechResponse(PROMPT_NOT_SUPPORTED);
 
                 // unknown intent
                 default:
-                    LambdaLogger.Log("WARNING: intent not recognized");
+                    LambdaLogger.Log("*** WARNING: intent not recognized");
                     return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP_QUESTION, shouldEndSession: false);
                 }
 
-            // skill audio-player status changed
+            // skill audio-player status changed (no response expected)
             case AudioPlayerRequest audio:
-                LambdaLogger.Log($"audio: {audio.AudioRequestType}");
+                LambdaLogger.Log($"*** INFO: audio: {audio.AudioRequestType}");
+                LambdaLogger.Log($"*** DEBUG: audio request: {JsonConvert.SerializeObject(audio)}");
+                switch(audio.AudioRequestType) {
+                    case AudioRequestType.PlaybackStarted:
+                    case AudioRequestType.PlaybackFinished:
+                        await DeletePodcastPlaybackAsync(skill.Context.System.User.UserId);
+                        break;
+                    case AudioRequestType.PlaybackStopped:
+                        await WritePodcastPlaybackAsync(new PodcastPlaybackInfo {
+                            UserId = skill.Context.System.User.UserId,
+                            Token = audio.Token,
+                            OffsetInMillisecondsText = audio.OffsetInMilliseconds
+                        });
+                        break;
+                    case AudioRequestType.PlaybackFailed:
+                        LambdaLogger.Log($"*** ERROR: playback failed: {JsonConvert.SerializeObject(audio.Error)}");
+                        break;
+                    case AudioRequestType.PlaybackNearlyFinished:
+                    default:
+                        break;
+                }
+
+                // BUG (2017-04-16, bjorg): return empty json when possible (i.e. {})
                 return null;
 
-            // skill session ended
+            // skill session ended (no response expected)
             case SessionEndedRequest ended:
-                LambdaLogger.Log("session ended");
+                LambdaLogger.Log("*** INFO: session ended");
+
+                // NOBUGTE (2017-04-16, bjorg): return empty json when possible (i.e. {})
                 return null;
 
-            // unknown skill received
+            // exception reported on previous response (no response expected)
+            case SystemExceptionRequest error:
+
+                // NOTE (2017-04-16, bjorg): there's currently no known way to avoid 'invalid response' exception,
+                //                           so we just ignore them
+                if(error.Error.Type == ErrorType.InvalidResponse) {
+                    LambdaLogger.Log("*** INFO: invalid response (expected)");
+                } else {
+                    LambdaLogger.Log("*** INFO: system exception");
+                    LambdaLogger.Log($"*** EXCEPTION: skill request: {JsonConvert.SerializeObject(skill)}");
+                }
+
+                // BUG (2017-04-16, bjorg): return empty json when possible (i.e. {})
+                return null;
+
+            // unknown skill received (no response expected)
             default:
-                LambdaLogger.Log($"WARNING: unrecognized skill request: {JsonConvert.SerializeObject(skill)}");
+                LambdaLogger.Log($"*** WARNING: unrecognized skill request: {JsonConvert.SerializeObject(skill)}");
+
+                // BUG (2017-04-16, bjorg): return empty json when possible (i.e. {})
                 return null;
             }
         }
@@ -153,15 +217,11 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
         }
 
         private async Task<SkillResponse> BuildPodcastResponseAsync(int podcastIndex) {
-            var response = await _dynamoClient.GetItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
-                ["Key"] = new AttributeValue { S = PodcastInfo.ROW_KEY }
-            });
-            AttributeValue value = null;
-            if((response.HttpStatusCode != HttpStatusCode.OK) || !response.Item.TryGetValue("Value", out value)) {
-                return BuildSpeechResponse(PROMPT_ERROR_PODCAST);
+            var list = await GetPodcastsAsync();
+            if(podcastIndex >= list.Length) {
+                return BuildSpeechResponse(PROMPT_PODCAST_NOT_AVAILBLE + PROMPT_HELP_QUESTION, shouldEndSession: false);
             }
             try {
-                var list = PodcastInfo.FromJson(value.S);
                 var item = list[podcastIndex];
                 var prompt = $"Playing podcast entitled: \"{item.Title}\"";
                 var result = new SkillResponse {
@@ -175,16 +235,54 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 };
                 result.Response.Directives.Add(new AudioPlayerPlayDirective() {
                     PlayBehavior = PlayBehavior.ReplaceAll,
-                    AudioItem = new AudioItem() {
-                        Stream = new AudioItemStream() {
+                    AudioItem = new AudioItem {
+                        Stream = new AudioItemStream {
                             Url = item.Url,
-                            Token = item.Token
+                            Token = item.Token,
+                            OffsetInMilliseconds = 0
                         }
                     }
                 });
                 return result;
             } catch(Exception e) {
-                LambdaLogger.Log($"ERROR: unable to parse podcast #{podcastIndex} ({e})");
+                LambdaLogger.Log($"*** ERROR: unable to parse podcast #{podcastIndex} ({e})");
+                return BuildSpeechResponse(PROMPT_ERROR_PODCAST);
+            }
+        }
+
+        private async Task<SkillResponse> BuildResumePodcastResponseAsync(PodcastPlaybackInfo playback) {
+            if(playback == null) {
+                return BuildSpeechResponse(PROMPT_CANNOT_RESUME + PROMPT_HELP_QUESTION, shouldEndSession: false);
+            }
+            var list = await GetPodcastsAsync();
+            var item = list.FirstOrDefault(p => p.Token == playback.Token);
+            if(item == null) {
+                return BuildSpeechResponse(PROMPT_PODCAST_NOT_AVAILBLE + PROMPT_HELP_QUESTION, shouldEndSession: false);
+            }
+            try {
+                var prompt = $"Continue playing podcast entitled: \"{item.Title}\"";
+                var result = new SkillResponse {
+                    Version = "1.0",
+                    Response = new ResponseBody {
+                        OutputSpeech = new PlainTextOutputSpeech {
+                            Text = prompt
+                        },
+                        ShouldEndSession = true
+                    }
+                };
+                result.Response.Directives.Add(new AudioPlayerPlayDirective() {
+                    PlayBehavior = PlayBehavior.ReplaceAll,
+                    AudioItem = new AudioItem {
+                        Stream = new AudioItemStream {
+                            Url = item.Url,
+                            Token = item.Token,
+                            OffsetInMilliseconds = playback.OffsetInMilliseconds
+                        }
+                    }
+                });
+                return result;
+            } catch(Exception e) {
+                LambdaLogger.Log($"*** ERROR: unable to parse podcast (token='{playback.Token}', offset={playback.OffsetInMillisecondsText}) ({e})");
                 return BuildSpeechResponse(PROMPT_ERROR_PODCAST);
             }
         }
@@ -239,7 +337,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                 } catch(Exception e) {
 
                     // log the exception and continue
-                    LambdaLogger.Log($"ERROR: unable to parse item ({e})");
+                    LambdaLogger.Log($"*** ERROR: unable to parse item ({e})");
                 }
             }
             if((morningReport == null) && (podcasts == null)) {
@@ -270,6 +368,48 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                     ShouldEndSession = shouldEndSession
                 }
             };
+        }
+
+        private async Task<PodcastInfo[]> GetPodcastsAsync() {
+            var response = await _dynamoClient.GetItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
+                ["Key"] = new AttributeValue { S = PodcastInfo.ROW_KEY }
+            });
+            AttributeValue value = null;
+            if((response.HttpStatusCode != HttpStatusCode.OK) || !response.Item.TryGetValue("Value", out value)) {
+                LambdaLogger.Log($"*** ERROR: unable to retrieve the podcasts row (status: {response.HttpStatusCode})");
+                return null;
+            }
+            try {
+                return PodcastInfo.FromJson(value.S);
+            } catch(Exception e) {
+                LambdaLogger.Log($"*** ERROR: unable to parse podcasts row ({e})");
+                return null;
+            }
+        }
+
+        private async Task WritePodcastPlaybackAsync(PodcastPlaybackInfo playback) {
+            var response = await _dynamoClient.PutItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
+                ["Key"] = new AttributeValue { S = UserIdToResumeRecordKey(playback.UserId) },
+                ["Value"] = new AttributeValue { S = JsonConvert.SerializeObject(playback) },
+                ["When"] = new AttributeValue { S = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") }
+            });
+        }
+
+        private async Task<PodcastPlaybackInfo> ReadPodcastPlaybackAsync(string userId) {
+            var response = await _dynamoClient.GetItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
+                ["Key"] = new AttributeValue { S = UserIdToResumeRecordKey(userId) }
+            });
+            AttributeValue value = null;
+            if((response.HttpStatusCode != HttpStatusCode.OK) || !response.Item.TryGetValue("Value", out value)) {
+                return null;
+            }
+            return JsonConvert.DeserializeObject<PodcastPlaybackInfo>(value.S);
+        }
+
+        private async Task DeletePodcastPlaybackAsync(string userId) {
+            var response = await _dynamoClient.DeleteItemAsync(_dynamoTable, new Dictionary<string, AttributeValue> {
+                ["Key"] = new AttributeValue { S = UserIdToResumeRecordKey(userId) }
+            });
         }
     }
 }
