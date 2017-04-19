@@ -19,21 +19,37 @@ ReadMorningReport listen morning report
 PlayPodcast to play me the most recent podcast
 PlayPodcast to play the most recent podcast
 PlayPodcast to play me the latest podcast
+PlayPodcast to play the most recent podcast
 PlayPodcast to play the latest podcast
 PlayPodcast to play the podcast
+PlayPodcast to play most recent podcast
+PlayPodcast to play latest podcast
 PlayPodcast to play podcast
+PlayPodcast play me the most recent podcast
+PlayPodcast play the most recent podcast
+PlayPodcast play me the most recent podcast
+PlayPodcast play me the latest podcast
+PlayPodcast play the latest podcast
+PlayPodcast play the podcast
+PlayPodcast play most recent podcast
+PlayPodcast play latest podcast
 PlayPodcast play podcast
 PlayPodcast podcast
 PlayPodcast I want to listen to the most recent podcast
 PlayPodcast I want to listen to the latest podcast
+PlayPodcast listen to the most recent podcast
+PlayPodcast listen to the latest podcast
 PlayPodcast listen to the podcast
 PlayPodcast listen podcast
 
-WhatIsNew what is the latest news
+WhatIsNew to what is the latest news
+WhatIsNew give me the latest news
 WhatIsNew give me the latest news
 WhatIsNew what is the most recent news
+WhatIsNew to give me the most recent news
 WhatIsNew give me the most recent news
 WhatIsNew what is the latest news
+WhatIsNew to give me the latest news
 WhatIsNew give me the latest news
 WhatIsNew latest news
 WhatIsNew most recent news
@@ -44,3 +60,21 @@ WhatIsNew listen to what's new
 WhatIsNew listen to latest news
 WhatIsNew listen to most recent news
 WhatIsNew listen news
+WhatIsNew to tell me what is new
+WhatIsNew to tell me the latest news
+WhatIsNew to tell me the most recent news
+WhatIsNew to tell what is new
+WhatIsNew to tell the latest news
+WhatIsNew to tell the most recent news
+WhatIsNew to tell latest news
+WhatIsNew to tell most recent news
+WhatIsNew to tell news
+WhatIsNew tell me what is new
+WhatIsNew tell me the latest news
+WhatIsNew tell me the most recent news
+WhatIsNew tell what is new
+WhatIsNew tell the latest news
+WhatIsNew tell the most recent news
+WhatIsNew tell latest news
+WhatIsNew tell most recent news
+WhatIsNew tell news
