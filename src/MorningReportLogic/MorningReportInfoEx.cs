@@ -49,7 +49,6 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
             var sections = new List<(string Title, List<string> Sentences)>();
             sections.Add((Title: morningReport.Title, Sentences: new List<string>()));
             Visit(morningReport.Document.Root);
-            sections.Last().Sentences.Add($"This was the morning report by {morningReport.Author}, published on {morningReport.Date:dddd, MMMM d, yyyy}.");
 
             // convert HTML to SSML format
             var ssml = new XDocument(new XElement("speak"));
