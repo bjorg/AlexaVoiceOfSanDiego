@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 Voice of San Diego
+ * Copyright (c) 2018 Voice of San Diego
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,12 @@ namespace HandleAlexaPrompts {
     public class UnitTest1 {
 
         //--- Methods ---
+
+        [Fact]
+        public void TestName() {
+            
+            // NOTE (2018-05-03, bjorg): dummy test placeholder
+        }
 
         // [Fact]
         // public void ConvertEncodedContentsToSsml() {

@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 Voice of San Diego
+ * Copyright (c) 2018 Voice of San Diego
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -44,7 +44,6 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
 
             // assert
             Assert.NotNull(morningReport.Title);
-            Assert.NotNull(morningReport.Date);
             Assert.NotNull(morningReport.Author);
             Assert.NotNull(morningReport.Document);
         }

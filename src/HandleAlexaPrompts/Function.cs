@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 Voice of San Diego
+ * Copyright (c) 2018 Voice of San Diego
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -175,7 +175,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                         await WritePodcastPlaybackAsync(new PodcastPlaybackInfo {
                             UserId = skill.Context.System.User.UserId,
                             Token = audio.Token,
-                            OffsetInMillisecondsText = audio.OffsetInMilliseconds
+                            OffsetInMillisecondsText = audio.OffsetInMilliseconds.ToString()
                         });
                         break;
                     case AudioRequestType.PlaybackFailed:
@@ -193,7 +193,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
             case SessionEndedRequest ended:
                 LambdaLogger.Log("*** INFO: session ended");
 
-                // NOBUGTE (2017-04-16, bjorg): return empty json when possible (i.e. {})
+                // BUG (2017-04-16, bjorg): return empty json when possible (i.e. {})
                 return null;
 
             // exception reported on previous response (no response expected)
