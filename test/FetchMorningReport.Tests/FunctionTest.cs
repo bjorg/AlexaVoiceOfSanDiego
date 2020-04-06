@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 Voice of San Diego
+ * Copyright (c) 2017-2020 Voice of San Diego
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,26 @@
  * SOFTWARE.
  */
 
-using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
+using LambdaSharp.ConfigSource;
 using Xunit;
-using VoiceOfSanDiego.Alexa.MorningReport;
 
-namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
+namespace VoiceOfSanDiego.Alexa.FetchMorningReportFunction.Tests {
     public class FunctionTest {
 
         //--- Methods ---
         [Fact]
-        public void FindMorningReportInRssFeed() {
+        public async Task FindMorningReportInRssFeed() {
 
             // arrange
-            var function = new Function(null, null);
+            var function = new Function();
+            await function.InitializeAsync(new LambdaSharp.LambdaConfig(new LambdaDictionarySource(new Dictionary<string, string> {
+                ["FetchMorningReportRssFeed"] = "http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/",
+                ["AlexaContents"] = "DynamoDB-Table"
+            })));
             var rss = XDocument.Load("../../../rss.xml");
 
             // act
@@ -44,16 +49,19 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
 
             // assert
             Assert.NotNull(morningReport.Title);
-            Assert.NotNull(morningReport.Date);
             Assert.NotNull(morningReport.Author);
             Assert.NotNull(morningReport.Document);
         }
 
         [Fact]
-        public void FetchLiveMorningReportFeed() {
+        public async Task FetchLiveMorningReportFeed() {
 
             // arrange
-            var function = new Function("http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/", null);
+            var function = new Function();
+            await function.InitializeAsync(new LambdaSharp.LambdaConfig(new LambdaDictionarySource(new Dictionary<string, string> {
+                ["FetchMorningReportRssFeed"] = "http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/",
+                ["AlexaContents"] = "DynamoDB-Table"
+            })));
 
             // act
             var rss = function.FetchMorningReportFeedAsync().Result;
@@ -69,7 +77,11 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
         public void ConvertLiveMorningReportToSsml() {
 
             // arrange
-            var function = new Function("http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/", null);
+            var function = new Function();
+            await function.InitializeAsync(new LambdaSharp.LambdaConfig(new LambdaDictionarySource(new Dictionary<string, string> {
+                ["FetchMorningReportRssFeed"] = "http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/",
+                ["AlexaContents"] = "DynamoDB-Table"
+            })));
             var rss = function.FetchMorningReportFeedAsync().Result;
             var morningReport = function.FindMorningReport(rss);
 
@@ -88,7 +100,11 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport.Tests {
         public void ConvertLiveMorningReportToText() {
 
             // arrange
-            var function = new Function("http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/", null);
+            var function = new Function();
+            await function.InitializeAsync(new LambdaSharp.LambdaConfig(new LambdaDictionarySource(new Dictionary<string, string> {
+                ["FetchMorningReportRssFeed"] = "http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/",
+                ["AlexaContents"] = "DynamoDB-Table"
+            })));
             var rss = function.FetchMorningReportFeedAsync().Result;
             var morningReport = function.FindMorningReport(rss);
 

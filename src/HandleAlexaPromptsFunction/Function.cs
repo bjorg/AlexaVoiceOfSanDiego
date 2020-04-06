@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 Voice of San Diego
+ * Copyright (c) 2017-2020 Voice of San Diego
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,29 +22,30 @@
  * SOFTWARE.
  */
 
-using Amazon.Lambda.Core;
-using Alexa.NET.Request;
-using Alexa.NET.Response;
-using Alexa.NET.Request.Type;
-using Newtonsoft.Json;
-using Alexa.NET.Response.Directive;
 using System;
-using Amazon;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Text;
+using System.Threading.Tasks;
+using Alexa.NET.Request;
+using Alexa.NET.Request.Type;
+using Alexa.NET.Response;
+using Alexa.NET.Response.Directive;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Net;
+using Amazon.Lambda.Core;
+using LambdaSharp;
+using Newtonsoft.Json;
 using VoiceOfSanDiego.Alexa.MorningReport;
 using VoiceOfSanDiego.Alexa.Podcasts;
-using System.Text;
-using System.Linq;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 
-namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
-    public class Function {
+namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
+
+    public class Function : ALambdaFunction<SkillRequest, SkillResponse> {
 
         //--- Constants ---
         private const string PROMPT_WELCOME = "Welcome to Voice of San Diego! ";
@@ -87,28 +88,22 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
         }
 
         //--- Fields ---
-        private readonly string _dynamoTable;
-        private readonly string _preHeadingBreak = "750ms";
-        private readonly string _postHeadingBreak = "250ms";
-        private readonly string _bulletBreak = "750ms";
-        private readonly AmazonDynamoDBClient _dynamoClient = new AmazonDynamoDBClient(RegionEndpoint.USEast1);
+        private string _dynamoTable;
+        private string _preHeadingBreak = "750ms";
+        private string _postHeadingBreak = "250ms";
+        private string _bulletBreak = "750ms";
+        private AmazonDynamoDBClient _dynamoClient;
 
-        //--- Constructors ---
-        public Function() {
-
-            // read mandatory lambda function settings; without these, nothing works!
-            _dynamoTable = Environment.GetEnvironmentVariable("dynamo_table");
-
-            // read optional lambda function settings
-            _preHeadingBreak = Environment.GetEnvironmentVariable("pre_heading_break") ?? _preHeadingBreak;
-            _postHeadingBreak = Environment.GetEnvironmentVariable("post_heading_break") ?? _postHeadingBreak;
-            _bulletBreak = Environment.GetEnvironmentVariable("bullet_break") ?? _bulletBreak;
+        //--- Methods ---
+        public override async Task InitializeAsync(LambdaConfig config) {
+            _dynamoTable = config.ReadDynamoDBTableName("AlexaContents");
+            _preHeadingBreak = $"{config.ReadInt("PreHeadingPause")}ms";
+            _postHeadingBreak = $"{config.ReadInt("PostHeadingPause")}ms";
+            _bulletBreak = $"{config.ReadInt("BulletPause")}ms";
+            _dynamoClient = new AmazonDynamoDBClient();
         }
 
-        public async Task<SkillResponse> FunctionHandler(SkillRequest skill, ILambdaContext context) {
-            if(_dynamoTable == null) {
-                throw new Exception("missing configuration value 'dynamo_table'");
-            }
+        public override async Task<SkillResponse> ProcessMessageAsync(SkillRequest skill) {
 
             // decode skill request
             switch(skill.Request) {
@@ -175,7 +170,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPrompts {
                         await WritePodcastPlaybackAsync(new PodcastPlaybackInfo {
                             UserId = skill.Context.System.User.UserId,
                             Token = audio.Token,
-                            OffsetInMillisecondsText = audio.OffsetInMilliseconds
+                            OffsetInMillisecondsText = audio.OffsetInMilliseconds.ToString()
                         });
                         break;
                     case AudioRequestType.PlaybackFailed:

@@ -1,0 +1,103 @@
+Module: VoiceOfSanDiego.Alexa
+Version: 1.0-DEV
+Description: Alexa skill to get the Morning Report and podcasts from Voice of San Diego
+Items:
+
+  ###
+  ### Alexa Interactions
+  ###
+  - Parameter: AlexaSkillId
+    Description: Only allow this Alexa Skill ID to be handled by this module (recommended)
+    Default: "*"
+
+  - Parameter: PreHeadingPause
+    Description: Number of milliseconds to pause before a heading in the Morning Report
+    Section: Alexa Skill
+    Scope: HandleAlexaPromptsFunction
+    Type: Number
+    Default: 750
+    MinValue: 0
+    MaxValue: 5000
+
+  - Parameter: PostHeadingPause
+    Description: Number of milliseconds to pause after a heading in the Morning Report
+    Section: Alexa Skill
+    Scope: HandleAlexaPromptsFunction
+    Type: Number
+    Default: 250
+    MinValue: 0
+    MaxValue: 5000
+
+  - Parameter: BulletPause
+    Description: Number of milliseconds to pause after a bullet point in the Morning Report
+    Section: Alexa Skill
+    Scope: HandleAlexaPromptsFunction
+    Type: Number
+    Default: 750
+    MinValue: 0
+    MaxValue: 5000
+
+  - Function: HandleAlexaPromptsFunction
+    Description: Handle voice interactions from Alexa
+    Memory: 256
+    Timeout: 60
+    Sources:
+      - Alexa: !Ref AlexaSkillId
+
+  - Resource: AlexaContents
+    Description: TO-DO - update resource description
+    Type: AWS::DynamoDB::Table
+    Scope: all
+    Allow: ReadWrite
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: Key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Key
+          KeyType: HASH
+
+  ###
+  ### Fetch Morning Report
+  ###
+  - Parameter: FetchMorningReportRssFeed
+    Description: RSS feed for most recent podcasts
+    Section: Morning Report
+    Scope: FetchMorningReportFunction
+    Type: String
+    Default: "http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/"
+
+  - Function: FetchMorningReportFunction
+    Description: Fetch contents of the Morning Report every day
+    Memory: 256
+    Timeout: 60
+    Sources:
+      - Schedule: "cron(0/15 11-17 ? * * *)"
+
+  ###
+  ### Fetch Podcasts
+  ###
+  - Parameter: PodcastsRssFeed
+    Description: RSS feed for most recent podcasts
+    Section: Podcasts
+    Scope: FetchPodcastsFunction
+    Type: String
+    Default: "http://podcast.voiceofsandiego.org/rss"
+
+  - Parameter: PodcastsLimit
+    Description: Number of most recent podcasts to keep
+    Section: Podcasts
+    Scope: FetchPodcastsFunction
+    Type: Number
+    Default: 5
+    MinValue: 1
+    MaxValue: 20
+
+  - Function: FetchPodcastsFunction
+    Description: Fetch list of most recent podcasts each Friday and Saturday
+    Memory: 256
+    Timeout: 60
+    Sources:
+      - Schedule: "cron(0 19-23 ? * FRI *)"
+      - Schedule: "cron(0 0-6 ? * SAT *)"

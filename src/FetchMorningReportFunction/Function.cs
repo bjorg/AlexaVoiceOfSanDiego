@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 Voice of San Diego
+ * Copyright (c) 2017-2020 Voice of San Diego
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,30 +28,27 @@ using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Core;
 using HtmlAgilityPack;
+using LambdaSharp;
+using LambdaSharp.Schedule;
 using VoiceOfSanDiego.Alexa.Common;
 using VoiceOfSanDiego.Alexa.MorningReport;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 
-namespace VoiceOfSanDiego.Alexa.FetchMorningReport {
-    public class Function {
+namespace VoiceOfSanDiego.Alexa.FetchMorningReportFunction {
+
+    public class Function : ALambdaScheduleFunction {
 
         //--- Types ---
         private class UnableToLoadRssFeed : Exception { }
 
         //--- Class Fields ---
         private static HttpClient _httpClient = new HttpClient();
-
-        //--- Fields ---
-        private readonly string _morningReportFeedUrl;
-        private readonly string _dynamoTable;
-        private readonly AmazonDynamoDBClient _dynamoClient = new AmazonDynamoDBClient(RegionEndpoint.USEast1);
 
         //--- Class Methods ---
         public static XDocument ConvertHtmlToXml(string contents) {
@@ -66,40 +63,32 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReport {
             return XDocument.Parse(xml.ToString());
         }
 
-        //--- Constructors ---
-        public Function() {
-
-            // read mandatory lambda function settings; without these, nothing works!
-            _morningReportFeedUrl = Environment.GetEnvironmentVariable("morning_report_feed_url");
-            _dynamoTable = Environment.GetEnvironmentVariable("dynamo_table");
-        }
-
-        public Function(string podcastFeedUrl, string dynamoTable) {
-            _morningReportFeedUrl = podcastFeedUrl;
-            _dynamoTable = dynamoTable;
-        }
+        //--- Fields ---
+        private string _morningReportFeedUrl;
+        private string _dynamoTable;
+        private AmazonDynamoDBClient _dynamoClient;
 
         //--- Methods ---
-        public async Task FunctionHandler(ILambdaContext context) {
-            if(_morningReportFeedUrl == null) {
-                throw new Exception("missing configuration value 'podcasts_feed_url'");
-            }
-            if(_dynamoTable == null) {
-                throw new Exception("missing configuration value 'dynamo_table'");
-            }
+        public override async Task InitializeAsync(LambdaConfig config) {
+            _morningReportFeedUrl = config.ReadText("FetchMorningReportRssFeed");
+            _dynamoTable = config.ReadDynamoDBTableName("AlexaContents");
+            _dynamoClient = new AmazonDynamoDBClient();
+        }
+
+        public override async Task ProcessEventAsync(LambdaScheduleEvent schedule) {
 
             // retrieve RSS feed and parse it
-            LambdaLogger.Log($"fetching morning report feed from '{_morningReportFeedUrl}'");
+            LogInfo($"fetching morning report feed from '{_morningReportFeedUrl}'");
             var rss = await FetchMorningReportFeedAsync();
 
             // find up to the first morning report entry
-            LambdaLogger.Log("finding most recent morning report");
+            LogInfo("finding most recent morning report");
             var morningReport = FindMorningReport(rss);
-            LambdaLogger.Log("found morning report entries");
+            LogInfo("found morning report entries");
 
             // store morning report
             await SaveMorningReportAsync(morningReport);
-            LambdaLogger.Log("updated morning report");
+            LogInfo("updated morning report");
         }
 
         public async Task<XDocument> FetchMorningReportFeedAsync() {

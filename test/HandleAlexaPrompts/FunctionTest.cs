@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 Voice of San Diego
+ * Copyright (c) 2017-2020 Voice of San Diego
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ using System;
 using Xunit;
 
 namespace HandleAlexaPrompts {
+
     public class UnitTest1 {
 
         //--- Methods ---

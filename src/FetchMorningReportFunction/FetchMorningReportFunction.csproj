@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Deterministic>true</Deterministic>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <RootNamespace>VoiceOfSanDiego.Alexa.FetchMorningReportFunction</RootNamespace>
+    <AWSProjectType>Lambda</AWSProjectType>
+    <NoWarn>CS1998</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0"/>
+    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.7.0"/>
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.3.105.25"/>
+    <PackageReference Include="HtmlAgilityPack.NetCore" Version="1.5.0.1"/>
+    <PackageReference Include="System.ValueTuple" Version="4.3.0"/>
+    <PackageReference Include="System.Xml.XDocument" Version="4.3.0"/>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\MorningReportLogic\MorningReportLogic.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Condition="'$(LAMBDASHARP)'==''" Include="LambdaSharp" Version="0.7.0.*"/>
+    <ProjectReference Condition="'$(LAMBDASHARP)'!=''" Include="$(LAMBDASHARP)/src/LambdaSharp/LambdaSharp.csproj"/>
+  </ItemGroup>
+</Project>

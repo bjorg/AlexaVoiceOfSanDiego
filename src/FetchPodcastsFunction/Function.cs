@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 Voice of San Diego
+ * Copyright (c) 2017-2020 Voice of San Diego
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,16 +32,18 @@ using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Core;
+using LambdaSharp;
+using LambdaSharp.Schedule;
 using Newtonsoft.Json;
 using VoiceOfSanDiego.Alexa.Common;
 using VoiceOfSanDiego.Alexa.Podcasts;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializerAttribute(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 
-namespace VoiceOfSanDiego.Alexa.FetchPodcasts {
+namespace VoiceOfSanDiego.Alexa.FetchPodcastsFunction {
 
-    public class Function {
+    public class Function : ALambdaScheduleFunction {
 
         //--- Types ---
         private class UnableToLoadRssFeed : Exception { }
@@ -50,47 +52,29 @@ namespace VoiceOfSanDiego.Alexa.FetchPodcasts {
         private static HttpClient _httpClient = new HttpClient();
 
         //--- Fields ---
-        private readonly string _podcastFeedUrl;
-        private readonly int _podcastsLimit;
-        private readonly string _dynamoTable;
-        private readonly AmazonDynamoDBClient _dynamoClient = new AmazonDynamoDBClient(RegionEndpoint.USEast1);
-
-        //--- Constructors ---
-        public Function() {
-
-            // read mandatory lambda function settings; without these, nothing works!
-            _podcastFeedUrl = System.Environment.GetEnvironmentVariable("podcasts_feed_url");
-            _dynamoTable = System.Environment.GetEnvironmentVariable("dynamo_table");
-
-            // read optional lambda function settings
-            if(!int.TryParse(System.Environment.GetEnvironmentVariable("podcasts_limit"), out _podcastsLimit)) {
-                _podcastsLimit = 5;
-            }
-        }
-
-        public Function(string podcastFeedUrl, string dynamoTable, int podcastsLimit) {
-            _podcastFeedUrl = podcastFeedUrl;
-            _dynamoTable = dynamoTable;
-            _podcastsLimit = podcastsLimit;
-        }
+        private string _podcastFeedUrl;
+        private int _podcastsLimit;
+        private string _dynamoTable;
+        private AmazonDynamoDBClient _dynamoClient;
 
         //--- Methods ---
-        public async Task FunctionHandler(ILambdaContext context) {
-            if(_podcastFeedUrl == null) {
-                throw new Exception("missing configuration value 'podcasts_feed_url'");
-            }
-            if(_dynamoTable == null) {
-                throw new Exception("missing configuration value 'dynamo_table'");
-            }
+        public override async Task InitializeAsync(LambdaConfig config) {
+            _podcastFeedUrl = config.ReadText("PodcastsRssFeed");
+            _podcastsLimit = config.ReadInt("PodcastsLimit");
+            _dynamoTable = config.ReadDynamoDBTableName("AlexaContents");
+            _dynamoClient = new AmazonDynamoDBClient();
+        }
+
+        public override async Task ProcessEventAsync(LambdaScheduleEvent schedule) {
 
             // retrieve RSS feed and parse it
-            LambdaLogger.Log($"fetching podcast feed from '{_podcastFeedUrl}'");
+            LogInfo($"fetching podcast feed from '{_podcastFeedUrl}'");
             var rss = await FetchPodcastFeedAsync();
 
             // find up to the desired number of podcast entries
-            LambdaLogger.Log($"extracting up to {_podcastsLimit} podcast entries");
+            LogInfo($"extracting up to {_podcastsLimit} podcast entries");
             var podcasts = FindPodcasts(rss);
-            LambdaLogger.Log($"found {podcasts.Length} podcast entries");
+            LogInfo($"found {podcasts.Length} podcast entries");
 
             // store podcast playlist
             if(podcasts.Any()) {
