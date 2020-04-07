@@ -28,6 +28,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Alexa.NET;
 using Alexa.NET.Request;
 using Alexa.NET.Request.Type;
 using Alexa.NET.Response;
@@ -81,6 +82,24 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
             }
         }
 
+        private class PlaybackFailedException : Exception {
+
+            //--- Constructors ---
+            public PlaybackFailedException(Error error) : base($"{error.Type}: {error.Message}") { }
+        }
+
+        private class RetrievePodcastsFailedException : Exception {
+
+            //--- Constructors ---
+            public RetrievePodcastsFailedException(HttpStatusCode httpStatusCode) : base($"unable to retrieve the podcasts row (status: {httpStatusCode})") { }
+        }
+
+        private class SystemExceptionRequestException : Exception {
+
+            //--- Constructors ---
+            public SystemExceptionRequestException(SystemExceptionRequest request) : base($"{request.Error.Type}: {request.Error.Message} ({JsonConvert.SerializeObject(request.ErrorCause)})") { }
+        }
+
         //--- Class Methods ---
         private static string UserIdToResumeRecordKey(string userId) {
             var md5 = System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(userId));
@@ -110,12 +129,12 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
 
             // skill was activated without an intent
             case LaunchRequest launch:
-                LambdaLogger.Log($"*** INFO: launch");
+                LogInfo($"launch request");
                 return BuildSpeechResponse(PROMPT_WELCOME + PROMPT_HELP_QUESTION, shouldEndSession: false);
 
             // skill was activated with an intent
             case IntentRequest intent:
-                LambdaLogger.Log($"*** INFO: intent: {intent.Intent.Name}");
+                LogInfo($"intent request: {intent.Intent.Name}");
                 switch(intent.Intent.Name) {
 
                 // custom intents
@@ -148,19 +167,18 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
                 case BuiltInIntent.ShuffleOff:
                 case BuiltInIntent.ShuffleOn:
                 case BuiltInIntent.StartOver:
-                    LambdaLogger.Log($"*** WARNING: not supported ({intent.Intent.Name})");
+                    LogWarn($"not supported ({intent.Intent.Name})");
                     return BuildSpeechResponse(PROMPT_NOT_SUPPORTED);
 
                 // unknown intent
                 default:
-                    LambdaLogger.Log("*** WARNING: intent not recognized");
+                    LogWarn("intent not recognized");
                     return BuildSpeechResponse(PROMPT_NOT_UNDERSTOOD + PROMPT_HELP_QUESTION, shouldEndSession: false);
                 }
 
             // skill audio-player status changed (no response expected)
             case AudioPlayerRequest audio:
-                LambdaLogger.Log($"*** INFO: audio: {audio.AudioRequestType}");
-                LambdaLogger.Log($"*** DEBUG: audio request: {JsonConvert.SerializeObject(audio)}");
+                LogInfo($"audio request: {audio.AudioRequestType} ({JsonConvert.SerializeObject(audio)})");
                 switch(audio.AudioRequestType) {
                     case AudioRequestType.PlaybackStarted:
                     case AudioRequestType.PlaybackFinished:
@@ -174,44 +192,28 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
                         });
                         break;
                     case AudioRequestType.PlaybackFailed:
-                        LambdaLogger.Log($"*** ERROR: playback failed: {JsonConvert.SerializeObject(audio.Error)}");
+                        LogError(new PlaybackFailedException(audio.Error));
                         break;
                     case AudioRequestType.PlaybackNearlyFinished:
                     default:
                         break;
                 }
-
-                // BUG (2017-04-16, bjorg): return empty json when possible (i.e. {})
-                return null;
+                return ResponseBuilder.Empty();
 
             // skill session ended (no response expected)
             case SessionEndedRequest ended:
-                LambdaLogger.Log("*** INFO: session ended");
-
-                // NOBUGTE (2017-04-16, bjorg): return empty json when possible (i.e. {})
-                return null;
+                LogInfo("session ended");
+                return ResponseBuilder.Empty();
 
             // exception reported on previous response (no response expected)
             case SystemExceptionRequest error:
-
-                // NOTE (2017-04-16, bjorg): there's currently no known way to avoid 'invalid response' exception,
-                //                           so we just ignore them
-                if(error.Error.Type == ErrorType.InvalidResponse) {
-                    LambdaLogger.Log("*** INFO: invalid response (expected)");
-                } else {
-                    LambdaLogger.Log("*** INFO: system exception");
-                    LambdaLogger.Log($"*** EXCEPTION: skill request: {JsonConvert.SerializeObject(skill)}");
-                }
-
-                // BUG (2017-04-16, bjorg): return empty json when possible (i.e. {})
-                return null;
+                LogError(new SystemExceptionRequestException(error));
+                return ResponseBuilder.Empty();
 
             // unknown skill received (no response expected)
             default:
-                LambdaLogger.Log($"*** WARNING: unrecognized skill request: {JsonConvert.SerializeObject(skill)}");
-
-                // BUG (2017-04-16, bjorg): return empty json when possible (i.e. {})
-                return null;
+                LogWarn($"unrecognized skill request: {JsonConvert.SerializeObject(skill)}");
+                return ResponseBuilder.Empty();
             }
         }
 
@@ -264,7 +266,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
                 });
                 return result;
             } catch(Exception e) {
-                LambdaLogger.Log($"*** ERROR: unable to parse podcast #{podcastIndex} ({e})");
+                LogError(e, "unable to parse podcast #{0}", podcastIndex);
                 return BuildSpeechResponse(PROMPT_ERROR_PODCAST);
             }
         }
@@ -301,7 +303,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
                 });
                 return result;
             } catch(Exception e) {
-                LambdaLogger.Log($"*** ERROR: unable to parse podcast (token='{playback.Token}', offset={playback.OffsetInMillisecondsText}) ({e})");
+                LogError(e, "unable to parse podcast (token='{0}', offset={1})", playback.Token, playback.OffsetInMillisecondsText);
                 return BuildSpeechResponse(PROMPT_ERROR_PODCAST);
             }
         }
@@ -356,7 +358,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
                 } catch(Exception e) {
 
                     // log the exception and continue
-                    LambdaLogger.Log($"*** ERROR: unable to parse item ({e})");
+                    LogError(e, "unable to parse item");
                 }
             }
             if((morningReport == null) && (podcasts == null)) {
@@ -395,13 +397,13 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
             });
             AttributeValue value = null;
             if((response.HttpStatusCode != HttpStatusCode.OK) || !response.Item.TryGetValue("Value", out value)) {
-                LambdaLogger.Log($"*** ERROR: unable to retrieve the podcasts row (status: {response.HttpStatusCode})");
+                LogError(new RetrievePodcastsFailedException(response.HttpStatusCode));
                 return null;
             }
             try {
                 return PodcastInfo.FromJson(value.S);
             } catch(Exception e) {
-                LambdaLogger.Log($"*** ERROR: unable to parse podcasts row ({e})");
+                LogError(e, "unable to parse podcasts row");
                 return null;
             }
         }

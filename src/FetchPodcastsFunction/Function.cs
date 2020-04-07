@@ -28,13 +28,11 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Core;
 using LambdaSharp;
 using LambdaSharp.Schedule;
-using Newtonsoft.Json;
 using VoiceOfSanDiego.Alexa.Common;
 using VoiceOfSanDiego.Alexa.Podcasts;
 
@@ -79,7 +77,7 @@ namespace VoiceOfSanDiego.Alexa.FetchPodcastsFunction {
             // store podcast playlist
             if(podcasts.Any()) {
                 await SavePodcastsAsync(podcasts);
-                LambdaLogger.Log($"updated podcasts playlist");
+                LogInfo($"updated podcasts playlist");
             }
         }
 

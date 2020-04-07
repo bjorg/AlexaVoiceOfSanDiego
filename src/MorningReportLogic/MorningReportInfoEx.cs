@@ -30,6 +30,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace VoiceOfSanDiego.Alexa.MorningReport {
+
     public static class MorningReportInfoEx {
 
         //--- Class Fields ---
