@@ -7,12 +7,33 @@ Items:
   ### Alexa Interactions
   ###
   - Parameter: AlexaSkillId
+    Section: Alexa Skill
+    Label: Alexa Skill ID
     Description: Only allow this Alexa Skill ID to be handled by this module (recommended)
     Default: "*"
 
-  - Parameter: PreHeadingPause
-    Description: Number of milliseconds to pause before a heading in the Morning Report
+  - Condition: AlexaSkillIdIsWildcard
+    Description: Check if AlexaSkillId parameter limits invocations to a specific Alexa skill
+    Value: !Equals [ !Ref AlexaSkillId, "*" ]
+
+  - Parameter: OptimizeColdStart
     Section: Alexa Skill
+    Label: Optimize Cold Starts
+    Description: Ensure Alexa function is always running (increases cost)
+    Type: String
+    Default: "Disabled"
+    AllowedValues:
+      - "Enabled"
+      - "Disabled"
+
+  - Condition: OptimizeColdStartIsEnabled
+    Description: Check if OptimizeColdStart has the value "Enabled"
+    Value: !Equals [ !Ref OptimizeColdStart, "Enabled" ]
+
+  - Parameter: PreHeadingPause
+    Section: Alexa Skill
+    Label: Pre-Heading Pause (milliseconds)
+    Description: Number of milliseconds to pause before a heading in the Morning Report
     Scope: HandleAlexaPromptsFunction
     Type: Number
     Default: 750
@@ -20,17 +41,19 @@ Items:
     MaxValue: 5000
 
   - Parameter: PostHeadingPause
-    Description: Number of milliseconds to pause after a heading in the Morning Report
     Section: Alexa Skill
+    Label: Post-Heading Pause (milliseconds)
+    Description: Number of milliseconds to pause after a heading in the Morning Report
     Scope: HandleAlexaPromptsFunction
     Type: Number
     Default: 250
     MinValue: 0
     MaxValue: 5000
 
-  - Parameter: BulletPause
-    Description: Number of milliseconds to pause after a bullet point in the Morning Report
+  - Parameter: BulletPointPause
     Section: Alexa Skill
+    Label: Bulletpoint Pause (milliseconds)
+    Description: Number of milliseconds to pause after a bullet point in the Morning Report
     Scope: HandleAlexaPromptsFunction
     Type: Number
     Default: 750
@@ -41,11 +64,31 @@ Items:
     Description: Handle voice interactions from Alexa
     Memory: 256
     Timeout: 60
-    Sources:
-      - Alexa: !Ref AlexaSkillId
+    # NOTE (2020-04-07, bjorg): had to manually map the Alexa source to allow
+    #   for provisioned concurrency, which requires a Lambda version
+    # Sources:
+    #   - Alexa: !Ref AlexaSkillId
+
+  - Resource: HandleAlexaPromptsFunctionVersion
+    Description: Lambda version with provisioned concurrency
+    Type: AWS::Lambda::Version
+    If: OptimizeColdStartIsEnabled
+    Properties:
+      FunctionName: !Ref HandleAlexaPromptsFunction
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 1
+
+  - Resource: HandleAlexaPromptsFunctionPermission
+    Description: Give permission to Alexa to invoke Lambda version
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      EventSourceToken: !If [ AlexaSkillIdIsWildcard, !Ref AWS::NoValue, !Ref AlexaSkillId ]
+      FunctionName: !If [ OptimizeColdStartIsEnabled, !Ref HandleAlexaPromptsFunctionVersion, !Ref HandleAlexaPromptsFunction ]
+      Principal: alexa-appkit.amazon.com
 
   - Resource: AlexaContents
-    Description: TO-DO - update resource description
+    Description: Table for holding session information and most recent Voice of San Diego contents
     Type: AWS::DynamoDB::Table
     Scope: all
     Allow: ReadWrite
@@ -62,8 +105,9 @@ Items:
   ### Fetch Morning Report
   ###
   - Parameter: FetchMorningReportRssFeed
-    Description: RSS feed for most recent podcasts
     Section: Morning Report
+    Label: Morning Report RSS Feed URL
+    Description: RSS feed for most recent podcasts
     Scope: FetchMorningReportFunction
     Type: String
     Default: "http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/"
@@ -79,15 +123,17 @@ Items:
   ### Fetch Podcasts
   ###
   - Parameter: PodcastsRssFeed
-    Description: RSS feed for most recent podcasts
     Section: Podcasts
+    Label: Podcast RSS Feed URL
+    Description: RSS feed for most recent podcasts
     Scope: FetchPodcastsFunction
     Type: String
     Default: "http://podcast.voiceofsandiego.org/rss"
 
   - Parameter: PodcastsLimit
-    Description: Number of most recent podcasts to keep
     Section: Podcasts
+    Label: Podcasts Limit
+    Description: Number of most recent podcasts to keep
     Scope: FetchPodcastsFunction
     Type: Number
     Default: 5

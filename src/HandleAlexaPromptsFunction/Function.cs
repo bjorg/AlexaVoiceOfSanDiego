@@ -118,7 +118,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
             _dynamoTable = config.ReadDynamoDBTableName("AlexaContents");
             _preHeadingBreak = $"{config.ReadInt("PreHeadingPause")}ms";
             _postHeadingBreak = $"{config.ReadInt("PostHeadingPause")}ms";
-            _bulletBreak = $"{config.ReadInt("BulletPause")}ms";
+            _bulletBreak = $"{config.ReadInt("BulletPointPause")}ms";
             _dynamoClient = new AmazonDynamoDBClient();
         }
 
