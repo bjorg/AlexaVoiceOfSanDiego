@@ -1,8 +1,20 @@
-Voice of San Diego Alexa Skills Setup Instructions
-==================================================
+# Voice of San Diego Alexa Skill
 
-Utterances
-----------
+This [LambdaSharp](https://lambdasharp.net) module provides the backend functionality for the [Voice of San Diego](https://www.voiceofsandiego.org/) Alexa skill.
+
+The Alexa skill can be found in the [Amazon Alexa Skills store](https://www.amazon.com/Voice-of-San-Diego/dp/B06ZZ23Z6R/ref=sr_1_1?dchild=1&keywords=voice+of+san+diego+alexa+skill&qid=1586276810&sr=8-1).
+
+## Deploying Alexa Skill Backend
+
+1. [Install `LambdaSharp.Tool` and initialize a deployment environment](https://lambdasharp.net/articles/Setup.html)
+1. Git clone this repository
+1. From the command line, run: `lash deploy src`
+
+## Using the Alexa Skill
+
+Open the Alexa skill by saying _"Alexa, open Voice of San Diego"_.
+
+The skill supports the following utterances:
 
 * Read the morning report
     * to read me the morning report
@@ -85,96 +97,3 @@ Utterances
     * tell latest news
     * tell most recent news
     * tell news
-
-Setup
------
-
-1. Create `VOSD-AlexaContents` database
-    1. Create DynamoDB named `VOSD-AlexaContents`
-    1. Set the primary key name to `Key` with type `String`
-
-1. Deploy `VOSD-FetchPodcasts` code
-    1. Create IAM role for `FetchPodcasts`
-        1. Create new role `VOSD-FetchPodcasts`
-        1. Use `AWSLambdaBasicExecutionRole`
-        1. Add DynamoDB permssions
-            * `dynamodb:BatchGetItem`
-            * `dynamodb:BatchWriteItem`
-            * `dynamodb:DeleteItem`
-            * `dynamodb:GetItem`
-            * `dynamodb:GetRecords`
-            * `dynamodb:GetShardIterator`
-            * `dynamodb:PutItem`
-            * `dynamodb:Query`
-            * `dynamodb:Scan`
-            * `dynamodb:UpdateItem`
-    1. Publish `FetchPodcasts`
-        1. `cd src/FetchPodcasts`
-        1. `dotnet lambda deploy-function`
-    1. Add environment variables for `VOSD-FetchPodcasts`
-        1. `dynamo_table` = `VOSD-AlexaContents`
-        1. `podcasts_limit` = `5`
-        1. `podcasts_feed_url` = `http://podcast.voiceofsandiego.org/rss`
-    1. Add first cron trigger
-        1. Select `CloudWatch Event - Schedule`
-        1. Select rule name: `VOSD-UpdatePodcastsFriday`
-        1. Schedule expression: `cron(0 19-23 ? * FRI *)`
-    1. Add second cron trigger
-        1. Select `CloudWatch Event - Schedule`
-        1. Select rule name: `VOSD-UpdatePodcastsSaturday`
-        1. Schedule expression: `cron(0 0-6 ? * SAT *)`
-
-1. Deploy `VOSD-FetchMorningReport`
-    1. Create IAM role for `FetchMorningReport`
-        1. Create new role `VOSD-FetchMorningReport`
-        1. Use `AWSLambdaBasicExecutionRole`
-        1. Add DynamoDB permssions
-            * `dynamodb:BatchGetItem`
-            * `dynamodb:BatchWriteItem`
-            * `dynamodb:DeleteItem`
-            * `dynamodb:GetItem`
-            * `dynamodb:GetRecords`
-            * `dynamodb:GetShardIterator`
-            * `dynamodb:PutItem`
-            * `dynamodb:Query`
-            * `dynamodb:Scan`
-            * `dynamodb:UpdateItem`
-    1. Publish `FetchMorningReport`
-        1. `cd src/FetchMorningReport`
-        1. `dotnet lambda deploy-function`
-    1. Add environment variables for `VOSD-FetchMorningReport`
-        1. `dynamo_table` = `VOSD-AlexaContents`
-        1. `morning_report_feed_url` = `http://www.voiceofsandiego.org/category/newsletters/morning-report/feed/`
-    1. Add cron trigger
-        1. Select `CloudWatch Event - Schedule`
-        1. Create rule name: `VOSD-UpdateAlexaContents`
-        1. Rule description: `Update VOSD-AlexaContents table`
-        1. Schedule expression: `cron(0/15 11-17 ? * * *)`
-
-1. Deploy `VOSD-HandleAlexaPrompts`
-    1. Create IAM role for `HandleAlexaPrompts`
-        1. Create new role `VOSD-HandleAlexaPrompts`
-        1. Use `AWSLambdaBasicExecutionRole`
-        1. Add DynamoDB permssions
-            * `dynamodb:BatchGetItem`
-            * `dynamodb:BatchWriteItem`
-            * `dynamodb:DeleteItem`
-            * `dynamodb:GetItem`
-            * `dynamodb:GetRecords`
-            * `dynamodb:GetShardIterator`
-            * `dynamodb:PutItem`
-            * `dynamodb:Query`
-            * `dynamodb:Scan`
-            * `dynamodb:UpdateItem`
-    1. Publish `HandleAlexaPrompts`
-        1. `cd src/HandleAlexaPrompts`
-        1. `dotnet lambda deploy-function`
-    1. Add environment variables for `VOSD-FetchPodcasts`
-        1. `dynamo_table` = `VOSD-AlexaContents`
-        1. (optional) `pre_heading_break` = `750ms`
-        1. (optional) `post_heading_break` = `250ms`
-        1. (optional) `bullet_break` = `750ms`
-    1. Configure `VOSD-HandleAlexaPrompts`
-        1. Add `Alexa Skills Kit` trigger
-    1. Create Alexa Skill in Amazon
-        1. Use `VOSD-HandleAlexaPrompts` lambda ARN as end point
