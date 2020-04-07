@@ -1,5 +1,7 @@
 # Voice of San Diego Alexa Skill
 
+![Voice of San Diego](assets/VOSD_108x108.png)
+
 This [LambdaSharp](https://lambdasharp.net) module provides the backend functionality for the [Voice of San Diego](https://www.voiceofsandiego.org/) Alexa skill.
 
 The Alexa skill can be found in the [Amazon Alexa Skills store](https://www.amazon.com/Voice-of-San-Diego/dp/B06ZZ23Z6R/ref=sr_1_1?dchild=1&keywords=voice+of+san+diego+alexa+skill&qid=1586276810&sr=8-1).
