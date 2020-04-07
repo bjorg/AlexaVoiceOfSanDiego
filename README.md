@@ -1,6 +1,5 @@
-# Voice of San Diego Alexa Skill
-
 ![Voice of San Diego](assets/VOSD_108x108.png)
+# Voice of San Diego Alexa Skill
 
 This [LambdaSharp](https://lambdasharp.net) module provides the backend functionality for the [Voice of San Diego](https://www.voiceofsandiego.org/) Alexa skill.
 
