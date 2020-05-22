@@ -30,7 +30,6 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
-using Amazon.Lambda.Core;
 using HtmlAgilityPack;
 using LambdaSharp;
 using LambdaSharp.Schedule;
@@ -44,15 +43,12 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReportFunction {
         //--- Types ---
         private class UnableToLoadRssFeed : Exception { }
 
-        //--- Class Fields ---
-        private static HttpClient _httpClient = new HttpClient();
-
         //--- Class Methods ---
         public static XDocument ConvertHtmlToXml(string contents) {
             if(contents == null) {
                 return null;
             }
-            HtmlDocument html = new HtmlDocument();
+            var html = new HtmlDocument();
             html.LoadHtml($"<html><body>{contents}</body></html>");
             html.OptionOutputAsXml = true;
             var xml = new StringWriter();
@@ -81,7 +77,15 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReportFunction {
             // find up to the first morning report entry
             LogInfo("finding most recent morning report");
             var morningReport = FindMorningReport(rss);
-            LogInfo("found morning report entries");
+            if(morningReport != null) {
+                LogInfo("found morning report entry");
+            } else {
+                LogWarn("unable to find morning report entries");
+                return;
+            }
+
+            // attempt to find image for article
+            await FindMainImageForMorningReport(morningReport);
 
             // store morning report
             await SaveMorningReportAsync(morningReport);
@@ -89,7 +93,7 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReportFunction {
         }
 
         public async Task<XDocument> FetchMorningReportFeedAsync() {
-            var response = await _httpClient.GetAsync(_morningReportFeedUrl);
+            var response = await HttpClient.GetAsync(_morningReportFeedUrl);
             if(!response.IsSuccessStatusCode) {
                 throw new UnableToLoadRssFeed();
             }
@@ -107,6 +111,7 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReportFunction {
             var date = Utils.ParseDate(item.Element("pubDate")?.Value);
             var author = item.Element("{http://purl.org/dc/elements/1.1/}creator")?.Value;
             var contents = item.Element("{http://purl.org/rss/1.0/modules/content/}encoded")?.Value;
+            var link = item.Element("link")?.Value;
             var doc = ConvertHtmlToXml(contents);
             if(doc == null) {
                 return null;
@@ -115,8 +120,40 @@ namespace VoiceOfSanDiego.Alexa.FetchMorningReportFunction {
                 Title = title,
                 Date = date ?? DateTime.UtcNow.Date,
                 Author  = author,
-                Document = doc
+                Document = doc,
+                ArticleUrl = link
             };
+        }
+
+        public async Task FindMainImageForMorningReport(MorningReportInfo morningReport) {
+            if(morningReport.ArticleUrl == null) {
+                LogWarn("missing article url");
+                return;
+            }
+            LogInfo("finding morning report main image");
+            try {
+                var articleResponse = await new HttpClient().GetAsync(morningReport.ArticleUrl);
+                if(articleResponse.IsSuccessStatusCode) {
+
+                    // fetch article contents
+                    var article = await articleResponse.Content.ReadAsStringAsync();
+
+                    // find first image in main content section
+                    var html = new HtmlDocument();
+                    html.LoadHtml(article);
+                    var mainImage = html.DocumentNode.SelectSingleNode("//div[@class='main']//img[@src]");
+                    if(mainImage != null) {
+                        morningReport.MainImageUrl = mainImage.Attributes["src"].Value;
+                    } else {
+                        LogInfo("unable to find an image on the page: {0}", morningReport.ArticleUrl);
+                    }
+                } else {
+                    LogWarn("failed to load article: {0}", morningReport.ArticleUrl);
+                }
+            } catch(Exception e) {
+                LogErrorAsWarning(e, "unable to fetch image from article: {0}", morningReport.ArticleUrl);
+            }
+            LogInfo("done finding morning report main image");
         }
 
         public async Task<bool> SaveMorningReportAsync(MorningReportInfo morningReport) {

@@ -46,6 +46,8 @@ namespace VoiceOfSanDiego.Alexa.MorningReport {
         public DateTime Date { get; set; }
         public string Author { get; set; }
         public string Xml { get; set; }
+        public string ArticleUrl { get; set; }
+        public string MainImageUrl { get; set; }
 
         [JsonIgnore]
         public XDocument Document {
