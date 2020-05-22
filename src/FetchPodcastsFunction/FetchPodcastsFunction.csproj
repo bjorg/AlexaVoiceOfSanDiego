@@ -10,7 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.3.105.25"/>
-    <PackageReference Include="System.Xml.XDocument" Version="4.3.0"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
