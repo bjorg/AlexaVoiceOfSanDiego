@@ -27,6 +27,7 @@ using System.Xml.Linq;
 using Newtonsoft.Json;
 
 namespace VoiceOfSanDiego.Alexa.MorningReport {
+
     public class MorningReportInfo {
 
         //--- Constants ---

@@ -37,9 +37,6 @@ using LambdaSharp.Schedule;
 using VoiceOfSanDiego.Alexa.Common;
 using VoiceOfSanDiego.Alexa.MorningReport;
 
-// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
-
 namespace VoiceOfSanDiego.Alexa.FetchMorningReportFunction {
 
     public class Function : ALambdaScheduleFunction {

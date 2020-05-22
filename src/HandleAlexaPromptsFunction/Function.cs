@@ -41,9 +41,6 @@ using Newtonsoft.Json;
 using VoiceOfSanDiego.Alexa.MorningReport;
 using VoiceOfSanDiego.Alexa.Podcasts;
 
-// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
-
 namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
 
     public class Function : ALambdaFunction<SkillRequest, SkillResponse> {

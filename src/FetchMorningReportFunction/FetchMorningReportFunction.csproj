@@ -9,8 +9,6 @@
     <NoWarn>CS1998</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0"/>
-    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.7.0"/>
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.3.105.25"/>
     <PackageReference Include="HtmlAgilityPack.NetCore" Version="1.5.0.1"/>
     <PackageReference Include="System.ValueTuple" Version="4.3.0"/>
@@ -21,7 +19,7 @@
     <ProjectReference Include="..\MorningReportLogic\MorningReportLogic.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Condition="'$(LAMBDASHARP)'==''" Include="LambdaSharp" Version="0.7.0.*"/>
+    <PackageReference Condition="'$(LAMBDASHARP)'==''" Include="LambdaSharp" Version="0.8.0.*"/>
     <ProjectReference Condition="'$(LAMBDASHARP)'!=''" Include="$(LAMBDASHARP)/src/LambdaSharp/LambdaSharp.csproj"/>
   </ItemGroup>
 </Project>
