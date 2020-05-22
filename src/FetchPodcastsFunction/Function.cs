@@ -30,7 +30,6 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
-using Amazon.Lambda.Core;
 using LambdaSharp;
 using LambdaSharp.Schedule;
 using VoiceOfSanDiego.Alexa.Common;
@@ -42,9 +41,6 @@ namespace VoiceOfSanDiego.Alexa.FetchPodcastsFunction {
 
         //--- Types ---
         private class UnableToLoadRssFeed : Exception { }
-
-        //--- Class Fields ---
-        private static HttpClient _httpClient = new HttpClient();
 
         //--- Fields ---
         private string _podcastFeedUrl;
@@ -79,7 +75,7 @@ namespace VoiceOfSanDiego.Alexa.FetchPodcastsFunction {
         }
 
         public async Task<XDocument> FetchPodcastFeedAsync() {
-            var response = await _httpClient.GetAsync(_podcastFeedUrl);
+            var response = await HttpClient.GetAsync(_podcastFeedUrl);
             if(!response.IsSuccessStatusCode) {
                 throw new UnableToLoadRssFeed();
             }
