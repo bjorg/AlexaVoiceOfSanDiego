@@ -241,7 +241,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
             }
             try {
                 var item = list[podcastIndex];
-                var prompt = $"Playing podcast entitled: \"{item.Title}\"";
+                var prompt = $"Playing podcast: \"{item.Title}\"";
                 var result = new SkillResponse {
                     Version = "1.0",
                     Response = new ResponseBody {
@@ -278,7 +278,7 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
                 return BuildSpeechResponse(PROMPT_PODCAST_NOT_AVAILBLE + PROMPT_HELP_QUESTION, shouldEndSession: false);
             }
             try {
-                var prompt = $"Continue playing podcast entitled: \"{item.Title}\"";
+                var prompt = $"Continue playing podcast: \"{item.Title}\"";
                 var result = new SkillResponse {
                     Version = "1.0",
                     Response = new ResponseBody {
@@ -363,15 +363,15 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
             }
             var news = new StringBuilder();
             if(morningReport != null) {
-                news.AppendLine($"The latest morning report is from {morningReport.Date.ToString("dddd, MMMM d")}, and is entitled: \"{morningReport.Title}\".");
+                news.AppendLine($"The latest morning report \"{morningReport.Title}\" is from {morningReport.Date.ToString("dddd, MMMM d")}.");
             }
             if((podcasts != null) && (podcasts.Length > 0)) {
-                news.AppendLine($"The latest podcast was recorded {podcasts[0].Date.ToString("dddd, MMMM d")}, and is entitled: \"{podcasts[0].Title}\".");
+                news.AppendLine($"The latest podcast \"{podcasts[0].Title}\" was recorded {podcasts[0].Date.ToString("dddd, MMMM d")}.");
             }
             return BuildSpeechResponse(news.ToString() + PROMPT_HELP_QUESTION, shouldEndSession: false);
         }
 
-        private SkillResponse BuildSpeechResponse(string prompt, string reprompt = null, bool shouldEndSession = true) {
+        private SkillResponse BuildSpeechResponse(string prompt, string reprompt = null, bool shouldEndSession = true, ICard card = null) {
             return new SkillResponse {
                 Version = "1.0",
                 Response = new ResponseBody {
@@ -383,7 +383,8 @@ namespace VoiceOfSanDiego.Alexa.HandleAlexaPromptsFunction {
                             Text = reprompt
                         }
                     } : null,
-                    ShouldEndSession = shouldEndSession
+                    ShouldEndSession = shouldEndSession,
+                    Card = card
                 }
             };
         }
