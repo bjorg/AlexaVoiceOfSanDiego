@@ -92,7 +92,8 @@ namespace VoiceOfSanDiego.Alexa.FetchPodcastsFunction {
                         Title = item.Element("title").Value,
                         Date = Utils.ParseDate(item.Element("pubDate").Value) ?? DateTime.UtcNow.Date,
                         Url = item.Element("enclosure").Attribute("url").Value.Replace("http://", "https://"),
-                        Token = item.Element("guid").Value
+                        Token = item.Element("guid").Value,
+                        ImageUrl = item.Element("{http://www.itunes.com/dtds/podcast-1.0.dtd}image")?.Attribute("href")?.Value.Replace("http://", "https://")
                     };
                 })
                 ?.ToArray() ?? new PodcastInfo[0];

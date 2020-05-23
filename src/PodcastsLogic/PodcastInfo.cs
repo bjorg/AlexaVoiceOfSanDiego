@@ -46,5 +46,6 @@ namespace VoiceOfSanDiego.Alexa.Podcasts {
         public DateTime Date { get; set; }
         public string Url { get; set; }
         public string Token { get; set; }
+        public string ImageUrl { get; set; }
     }
 }
